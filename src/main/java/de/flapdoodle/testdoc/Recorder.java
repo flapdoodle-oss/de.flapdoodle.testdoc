@@ -18,9 +18,17 @@ package de.flapdoodle.testdoc;
 
 import java.util.Arrays;
 
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
+
 public class Recorder {
 
 	static final String THIS_CLASS_NAME=Recorder.class.getName();
+	
+	public static Rule generateMarkDown(String template) {
+		return new Rule();
+	}
 	
 	public static void begin() {
 		System.out.println(" -> "+lineOf(new RuntimeException().getStackTrace()));
@@ -52,4 +60,20 @@ public class Recorder {
 				.build();
 	}
 
+	public static class Rule implements TestRule {
+
+		@Override
+		public Statement apply(Statement base, Description description) {
+			return new Statement() {
+				
+				@Override
+				public void evaluate() throws Throwable {
+					System.out.println("before "+base+" -> "+description);
+					base.evaluate();
+					System.out.println("after "+base+" -> "+description);
+				}
+			};
+		}
+		
+	}
 }

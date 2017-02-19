@@ -16,12 +16,25 @@
  */
 package de.flapdoodle.testdoc;
 
+import org.junit.ClassRule;
 import org.junit.Test;
 
 public class SampleTest {
+	
+	@ClassRule
+	public static Recorder.Rule foo=Recorder.generateMarkDown("foo.md");
 
 	@Test
 	public void firstMethod() {
+		Recorder.begin();
+		
+		// content
+		
+		Recorder.end();
+	}
+	
+	@Test
+	public void secondMethod() {
 		Recorder.begin();
 		
 		// content
