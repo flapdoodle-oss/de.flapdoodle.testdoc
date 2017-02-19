@@ -22,23 +22,23 @@ import org.junit.Test;
 public class SampleTest {
 	
 	@ClassRule
-	public static Recorder.Rule foo=Recorder.generateMarkDown("foo.md");
+	public static Recording recording=Recorder.generateMarkDown("sample.md");
 
 	@Test
 	public void firstMethod() {
-		Recorder.begin();
+		recording.begin();
 		
 		// content
 		
-		Recorder.end();
+		recording.end();
 	}
 	
 	@Test
 	public void secondMethod() {
-		Recorder.begin();
+		recording.begin();
 		
 		// content
 		
-		Recorder.end();
+		recording.end();
 	}
 }

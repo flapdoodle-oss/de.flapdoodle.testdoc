@@ -16,64 +16,68 @@
  */
 package de.flapdoodle.testdoc;
 
-import java.util.Arrays;
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.stream.Collectors;
 
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
+import de.flapdoodle.testdoc.Stacktraces.Scope;
 
 public class Recorder {
 
-	static final String THIS_CLASS_NAME=Recorder.class.getName();
-	
-	public static Rule generateMarkDown(String template) {
-		return new Rule();
+	public static Recording generateMarkDown(String template) {
+		try {
+			Line currentLine = Stacktraces.currentLine(Scope.CallerOfCaller);
+			String testClassName = currentLine.className();
+			String testFilename = currentLine.fileName();
+			System.out.println("Class -> "+testClassName);
+			Class<?> clazz = Class.forName(testClassName);
+			return new Recording(template, templateOf(clazz, template), sourceCodeOf(clazz, testFilename));
+		} catch (RuntimeException | ClassNotFoundException rx) {
+			throw new RuntimeException(rx);
+		}
 	}
-	
-	public static void begin() {
-		System.out.println(" -> "+lineOf(new RuntimeException().getStackTrace()));
+
+	private static String sourceCodeOf(Class<?> clazz, String testFilename) {
+		Path current = Paths.get("").toAbsolutePath();
+		System.out.println("- >"+current);
+		Path resolved = current.resolve(Paths.get("src","test","java"));
+		System.out.println("- >"+resolved);
+		System.out.println("- > exists: "+resolved.toFile().exists());
+		System.out.println("- > dir: "+resolved.toFile().isDirectory());
+		String[] parts = clazz.getPackage().getName().split("\\.");
+		for (String part : parts) {
+			resolved = resolved.resolve(part);
+			System.out.println("- >"+resolved);
+			System.out.println("- > exists: "+resolved.toFile().exists());
+			System.out.println("- > dir: "+resolved.toFile().isDirectory());
+		}
+		Path testFile = resolved.resolve(testFilename);
+		System.out.println("- >"+testFile);
+		System.out.println("- > exists: "+testFile.toFile().exists());
+		System.out.println("- > dir: "+testFile.toFile().isDirectory());
+		return read(() -> new FileInputStream(testFile.toFile()));
 	}
-	
-	public static void end() {
-		System.out.println(" -> "+lineOf(new RuntimeException().getStackTrace()));
+
+	private static String templateOf(Class<?> clazz, String template) {
+		return read(() -> Preconditions.checkNotNull(clazz.getResourceAsStream(template),"could not get %s for %s",template, clazz));
 	}
-	
-	private static Line lineOf(StackTraceElement[] stackTrace) {
-		int stackAfterRecorderCall=-1;
-		for (int i=0;i<stackTrace.length;i++) {
-			if (stackTrace[i].getClassName().equals(THIS_CLASS_NAME)) {
-				stackAfterRecorderCall=i+1;
-				break;
+
+	public static String read(TrowingSupplier<InputStream> input) {
+		try (InputStream is = input.get()) {
+			try (BufferedReader buffer = new BufferedReader(new InputStreamReader(is))) {
+				return buffer.lines().collect(Collectors.joining("\n"));
 			}
 		}
-		Preconditions.checkArgument(stackAfterRecorderCall>0, "could not find recorder in stackTrace: %s",Arrays.asList(stackTrace));
-		Preconditions.checkArgument(stackAfterRecorderCall<stackTrace.length, "found recorder in stackTrace at %s, but nothing left: %s",stackAfterRecorderCall, Arrays.asList(stackTrace));
-		return lineOf(stackTrace[stackAfterRecorderCall]);
-	}
-
-	private static Line lineOf(StackTraceElement stack) {
-		return Line.builder()
-				.className(stack.getClassName())
-				.fileName(stack.getFileName())
-				.methodName(stack.getMethodName())
-				.lineNumber(stack.getLineNumber())
-				.build();
-	}
-
-	public static class Rule implements TestRule {
-
-		@Override
-		public Statement apply(Statement base, Description description) {
-			return new Statement() {
-				
-				@Override
-				public void evaluate() throws Throwable {
-					System.out.println("before "+base+" -> "+description);
-					base.evaluate();
-					System.out.println("after "+base+" -> "+description);
-				}
-			};
+		catch (Exception e) {
+			throw new RuntimeException(e);
 		}
-		
+	}
+
+	static interface TrowingSupplier<T>  {
+		T get() throws Exception;
 	}
 }

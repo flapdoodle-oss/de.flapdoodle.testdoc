@@ -20,7 +20,6 @@ import org.immutables.value.Value.Immutable;
 
 @Immutable
 public interface Line {
-//	String documentId();
 	String className();
 	String fileName();
 	String methodName();
