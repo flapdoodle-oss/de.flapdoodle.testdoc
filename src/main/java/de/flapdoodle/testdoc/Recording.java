@@ -34,9 +34,9 @@ public class Recording implements TestRule {
 			
 			@Override
 			public void evaluate() throws Throwable {
-				System.out.println("before "+base+" -> "+description);
+//				System.out.println("before "+base+" -> "+description);
 				base.evaluate();
-				System.out.println("after "+base+" -> "+description);
+//				System.out.println("after "+base+" -> "+description);
 				
 				String renderedTemplate = renderTemplate(templateName, templateContent, linesOfCode, lines);
 				writeResult(templateName, renderedTemplate);
@@ -45,6 +45,10 @@ public class Recording implements TestRule {
 	}
 	
 	protected static void writeResult(String templateName, String renderedTemplate) {
+		System.getProperties().forEach((key, val) -> {
+			System.out.println(key+"="+val);
+		});
+		System.out.println("---------------------------");
 		System.out.println("should write "+templateName);
 		System.out.println("---------------------------");
 		System.out.println(renderedTemplate);
@@ -138,13 +142,13 @@ public class Recording implements TestRule {
 
 	public void begin() {
 		Line currentLine = Stacktraces.currentLine(Scope.CallerOfCaller);
-		System.out.println("begin -> "+currentLine);
+//		System.out.println("begin -> "+currentLine);
 		lines.add(Start.of(currentLine));
 	}
 	
 	public void end() {
 		Line currentLine = Stacktraces.currentLine(Scope.CallerOfCaller);
-		System.out.println("end -> "+currentLine);
+//		System.out.println("end -> "+currentLine);
 		lines.add(End.of(currentLine));
 	}
 }

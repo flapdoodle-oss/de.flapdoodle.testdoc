@@ -17,6 +17,7 @@
 package de.flapdoodle.testdoc;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -35,7 +36,7 @@ public class Recorder {
 			Line currentLine = Stacktraces.currentLine(Scope.CallerOfCaller);
 			String testClassName = currentLine.className();
 			String testFilename = currentLine.fileName();
-			System.out.println("Class -> "+testClassName);
+//			System.out.println("Class -> "+testClassName);
 			Class<?> clazz = Class.forName(testClassName);
 			return new Recording(template, templateOf(clazz, template), sourceCodeOf(clazz, testFilename));
 		} catch (RuntimeException | ClassNotFoundException rx) {
@@ -45,25 +46,30 @@ public class Recorder {
 
 	private static List<String> sourceCodeOf(Class<?> clazz, String testFilename) {
 		Path current = Paths.get("").toAbsolutePath();
-		System.out.println("- >"+current);
+		
 		Path resolved = current.resolve(Paths.get("src","test","java"));
-		System.out.println("- >"+resolved);
-		System.out.println("- > exists: "+resolved.toFile().exists());
-		System.out.println("- > dir: "+resolved.toFile().isDirectory());
+		Preconditions.checkArgument(isDir(resolved), "is not a directory: %s", resolved);
 		String[] parts = clazz.getPackage().getName().split("\\.");
 		for (String part : parts) {
 			resolved = resolved.resolve(part);
-			System.out.println("- >"+resolved);
-			System.out.println("- > exists: "+resolved.toFile().exists());
-			System.out.println("- > dir: "+resolved.toFile().isDirectory());
+			Preconditions.checkArgument(isDir(resolved), "is not a directory: %s", resolved);
 		}
+		
 		Path testFile = resolved.resolve(testFilename);
-		System.out.println("- >"+testFile);
-		System.out.println("- > exists: "+testFile.toFile().exists());
-		System.out.println("- > dir: "+testFile.toFile().isDirectory());
+		Preconditions.checkArgument(isFile(testFile), "is not a file: %s", testFile);
 		return readLines(() -> new FileInputStream(testFile.toFile()));
 	}
 
+	private static boolean isDir(Path resolved) {
+		File asFile = resolved.toFile();
+		return asFile.isDirectory() && asFile.exists();
+	}
+
+	private static boolean isFile(Path resolved) {
+		File asFile = resolved.toFile();
+		return asFile.isFile() && asFile.exists();
+	}
+	
 	private static String templateOf(Class<?> clazz, String template) {
 		return read(() -> Preconditions.checkNotNull(clazz.getResourceAsStream(template),"could not get %s for %s",template, clazz));
 	}
