@@ -9,5 +9,5 @@ ${firstMethod}
 ## second method
 
 ```
-${firstMethod}
+${secondMethod}
 ```

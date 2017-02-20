@@ -106,10 +106,19 @@ public class Recording implements TestRule {
 	private static String render(String templateContent, Map<String, List<String>> recordingsByMethod) {
 		String rendered=templateContent;
 		for (String method : recordingsByMethod.keySet()) {
-			String formatedBlocks=recordingsByMethod.get(method).stream().collect(Collectors.joining("...\n"));
+			List<String> blocks = recordingsByMethod.get(method);
+			String formatedBlocks=formatBlocks(blocks);
+//			System.out.println(method+"=\n-------"+formatedBlocks+"\n-------");
 			rendered=rendered.replace("${"+method+"}", formatedBlocks);
+//			System.out.println("~~~~~~~~~~~~~");
+//			System.out.println(rendered);
+//			System.out.println("~~~~~~~~~~~~~");
 		};
 		return rendered;
+	}
+
+	private static String formatBlocks(List<String> blocks) {
+		return blocks.stream().collect(Collectors.joining("\n...\n\n"));
 	}
 
 	private static Map<String, List<String>> recordingsByMethod(Map<String, List<HasLine>> methodNames, List<String> linesOfCode) {
@@ -126,6 +135,8 @@ public class Recording implements TestRule {
 		List<HasLine> sortedLineNumbers = list.stream()
 			.sorted((a,b) -> Integer.compare(a.line().lineNumber(),b.line().lineNumber()))
 			.collect(Collectors.toList());
+		
+//		System.out.println("sorted: "+sortedLineNumbers);
 		
 		Preconditions.checkArgument(sortedLineNumbers.size() % 2 == 0, "odd number of markers: %s", sortedLineNumbers);
 		
@@ -144,11 +155,14 @@ public class Recording implements TestRule {
 				}
 			}
 		}
+		
+//		System.out.println("ret: "+ret);
+		
 		return ret;
 	}
 
 	private static String blockOf(List<String> linesOfCode, int startLineNumber, int endLineNumber) {
-		return shiftLeft(linesOfCode.subList(startLineNumber+1, endLineNumber-1))
+		return shiftLeft(linesOfCode.subList(startLineNumber, endLineNumber-1))
 				.stream()
 				.collect(Collectors.joining("\n"));
 	}
@@ -156,6 +170,7 @@ public class Recording implements TestRule {
 	private static Pattern WHITESPACES=Pattern.compile("\\s*");
 	
 	private static List<String> shiftLeft(List<String> subList) {
+//		System.out.println("shiftLeft: "+subList);
 		
 		Optional<Integer> minWhitespaces = subList.stream()
 			.filter(line -> !line.trim().isEmpty())
@@ -170,6 +185,7 @@ public class Recording implements TestRule {
 					.map(line -> line.length()<offset ? "" : line.substring(offset))
 					.collect(Collectors.toList());
 		}
+		
 		
 		return subList;
 	}

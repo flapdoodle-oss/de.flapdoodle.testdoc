@@ -46,5 +46,9 @@ public class SampleTest {
 		assertEquals("second","second");
 		
 		recording.end();
+		
+		recording.begin();
+		// second block
+		recording.end();
 	}
 }
