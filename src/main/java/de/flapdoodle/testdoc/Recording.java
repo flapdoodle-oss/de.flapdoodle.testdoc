@@ -93,7 +93,7 @@ public class Recording implements TestRule {
 		Map<String, List<HasLine>> usedFilenames = lines.stream()
 			.collect(Collectors.groupingBy((HasLine l) -> l.line().fileName()));
 		
-		Preconditions.checkArgument(usedFilenames.size()==1, "more than one used filename: ",usedFilenames.keySet());
+		Preconditions.checkArgument(usedFilenames.size()<=1, "more than one used filename: ",usedFilenames.keySet());
 		
 		Map<String, List<HasLine>> methodNames = lines.stream()
 			.collect(Collectors.groupingBy((HasLine l) -> l.line().methodName()));

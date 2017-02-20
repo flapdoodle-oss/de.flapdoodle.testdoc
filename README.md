@@ -2,7 +2,7 @@
 
 We are a github organisation. You are invited to participate.
 
-# de.flapdoodle.testdoc
+## de.flapdoodle.testdoc
 
 simple doc generator based on unit tests
 
@@ -24,3 +24,91 @@ Snapshots (Repository http://oss.sonatype.org/content/repositories/snapshots)
 		<version>1.0.1-SNAPSHOT</version>
 	</dependency>
 
+### Usage
+
+Use Recording as `ClassRule` like this:
+
+```
+public class HowToTest {
+
+	@ClassRule
+	public static Recording recording=Recorder.generateMarkDown("howto.md");
+
+	@Test
+	public void theMethodNameIsTheKey() {
+		// everything after this marker ...
+		recording.begin();
+
+		boolean sampleVar = true;
+		assertTrue(sampleVar);
+
+		recording.end();
+		// nothing after this marker
+	}
+
+	@Test
+	public void multipleCodeBlocks() {
+		recording.begin();
+		// first block
+		recording.end();
+		recording.begin();
+		// second block
+		recording.end();
+	}
+}
+```
+
+.. and create MarkDown template as TestClass-Resource (same package):
+
+	# How To
+
+	some text
+
+	## Simple Sample 
+
+	```
+	${theMethodNameIsTheKey}
+	```
+
+	## Sample with more than one block
+
+	```
+	${multipleCodeBlocks}
+	```
+
+... add a property in your `pom.xml` :
+
+	<plugin>
+		<groupId>org.apache.maven.plugins</groupId>
+		<artifactId>maven-surefire-plugin</artifactId>
+		<version>2.19.1</version>
+		<configuration>
+			<systemPropertyVariables>
+				<de.flapdoodle.testdoc.destination>${project.build.directory}</de.flapdoodle.testdoc.destination>
+		  </systemPropertyVariables>
+		</configuration>
+	</plugin>
+
+... and you will get this:
+
+	# How To
+
+	some text
+
+	## Simple Sample 
+
+	```
+
+	boolean sampleVar = true;
+	assertTrue(sampleVar);
+
+	```
+
+	## Sample with more than one block
+
+	```
+	// first block
+	...
+
+	// second block
+	```
