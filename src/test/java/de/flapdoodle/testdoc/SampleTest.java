@@ -16,6 +16,8 @@
  */
 package de.flapdoodle.testdoc;
 
+import static org.junit.Assert.assertEquals;
+
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -29,6 +31,8 @@ public class SampleTest {
 		recording.begin();
 		
 		// content
+
+		assertEquals("first","first");
 		
 		recording.end();
 	}
@@ -38,6 +42,8 @@ public class SampleTest {
 		recording.begin();
 		
 		// content
+		             
+		assertEquals("second","second");
 		
 		recording.end();
 	}

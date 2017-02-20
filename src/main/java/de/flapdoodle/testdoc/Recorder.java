@@ -22,6 +22,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import de.flapdoodle.testdoc.Stacktraces.Scope;
@@ -41,7 +43,7 @@ public class Recorder {
 		}
 	}
 
-	private static String sourceCodeOf(Class<?> clazz, String testFilename) {
+	private static List<String> sourceCodeOf(Class<?> clazz, String testFilename) {
 		Path current = Paths.get("").toAbsolutePath();
 		System.out.println("- >"+current);
 		Path resolved = current.resolve(Paths.get("src","test","java"));
@@ -59,7 +61,7 @@ public class Recorder {
 		System.out.println("- >"+testFile);
 		System.out.println("- > exists: "+testFile.toFile().exists());
 		System.out.println("- > dir: "+testFile.toFile().isDirectory());
-		return read(() -> new FileInputStream(testFile.toFile()));
+		return readLines(() -> new FileInputStream(testFile.toFile()));
 	}
 
 	private static String templateOf(Class<?> clazz, String template) {
@@ -67,9 +69,18 @@ public class Recorder {
 	}
 
 	public static String read(TrowingSupplier<InputStream> input) {
+		return read(input, buffer -> buffer.lines().collect(Collectors.joining("\n")));
+	}
+	
+	public static List<String> readLines(TrowingSupplier<InputStream> input) {
+		return read(input, buffer -> buffer.lines().collect(Collectors.toList()));
+	}
+	
+	public static <T> T read(TrowingSupplier<InputStream> input, Function<BufferedReader, T> bufferMapping) {
 		try (InputStream is = input.get()) {
 			try (BufferedReader buffer = new BufferedReader(new InputStreamReader(is))) {
-				return buffer.lines().collect(Collectors.joining("\n"));
+				//return buffer.lines().collect(Collectors.joining("\n"));
+				return bufferMapping.apply(buffer);
 			}
 		}
 		catch (Exception e) {
