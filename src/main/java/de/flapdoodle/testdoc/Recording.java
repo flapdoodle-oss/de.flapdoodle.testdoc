@@ -16,6 +16,12 @@
  */
 package de.flapdoodle.testdoc;
 
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -33,6 +39,7 @@ import de.flapdoodle.testdoc.Stacktraces.Scope;
 
 public class Recording implements TestRule {
 
+	private static final String DEST_DIR_PROPERTY = "de.flapdoodle.testdoc.destination";
 	private final String templateName;
 	private final String templateContent;
 	private final List<String> linesOfCode;
@@ -61,14 +68,25 @@ public class Recording implements TestRule {
 	}
 	
 	protected static void writeResult(String templateName, String renderedTemplate) {
-		System.getProperties().forEach((key, val) -> {
-			System.out.println(key+"="+val);
-		});
-		System.out.println("---------------------------");
-		System.out.println("should write "+templateName);
-		System.out.println("---------------------------");
-		System.out.println(renderedTemplate);
-		System.out.println("---------------------------");
+		String destination = System.getProperty(DEST_DIR_PROPERTY);
+		if (destination!=null) {
+			Path output = Paths.get(destination).resolve(templateName);
+			try {
+				Files.write(output, renderedTemplate.getBytes(Charset.forName("UTF-8")), StandardOpenOption.WRITE,StandardOpenOption.CREATE);
+			} catch (IOException iox) {
+				throw new RuntimeException("could not write "+output,iox);
+			}
+		} else {
+			System.out.println(DEST_DIR_PROPERTY+" not set");
+			System.out.println("---------------------------");
+			System.out.println("should write "+templateName);
+			System.out.println("---------------------------");
+			System.out.println(renderedTemplate);
+			System.out.println("---------------------------");
+		}
+//		System.getProperties().forEach((key, val) -> {
+//			System.out.println(key+"="+val);
+//		});
 	}
 
 	protected static String renderTemplate(String templateName, String templateContent, List<String> linesOfCode, List<HasLine> lines) {

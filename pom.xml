@@ -115,6 +115,9 @@
                         <exclude>**/live/**</exclude>
                         <exclude>**/examples/**</exclude>
                     </excludes>
+                    <systemPropertyVariables>
+			            <de.flapdoodle.testdoc.destination>${project.build.directory}</de.flapdoodle.testdoc.destination>
+		          </systemPropertyVariables>
                 </configuration>
             </plugin>
 
