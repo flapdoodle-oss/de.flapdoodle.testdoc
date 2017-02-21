@@ -1,5 +1,6 @@
 # Organisation Flapdoodle OSS
 [![Maven Central](https://img.shields.io/maven-central/v/de.flapdoodle.testdoc/de.flapdoodle.testdoc.svg)](https://maven-badges.herokuapp.com/maven-central/de.flapdoodle.testdoc/de.flapdoodle.testdoc)
+
 We are a github organisation. You are invited to participate.
 
 ## de.flapdoodle.testdoc
