@@ -25,11 +25,23 @@ public abstract class Stacktraces {
 	}
 	
 	public static enum Scope {
-		Caller, CallerOfCaller
+		Caller, CallerOfCaller, CallerOfCallerWithDelegate, 
 	}
 	
 	static Line currentLine(Scope scope) {
-		return lineOf(new RuntimeException().getStackTrace(), scope==Scope.CallerOfCaller ? 2 : 1);
+		return lineOf(new RuntimeException().getStackTrace(), offset(scope));
+	}
+
+	private static int offset(Scope scope) {
+		switch(scope) {
+			case Caller:
+				return 1;
+			case CallerOfCaller:
+				return 2;
+			case CallerOfCallerWithDelegate:
+				return 3;
+		};
+		throw new IllegalArgumentException("scope not supported: "+scope);
 	}
 	
 	private static Line lineOf(StackTraceElement[] stackTrace, int skipLines) {

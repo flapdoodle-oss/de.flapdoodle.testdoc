@@ -32,16 +32,38 @@ import de.flapdoodle.testdoc.Stacktraces.Scope;
 public class Recorder {
 
 	public static Recording generateMarkDown(String template) {
+		return generateMarkDown(Scope.CallerOfCallerWithDelegate, template, 8);
+	}
+	
+	public static Recording generateMarkDown(String template, int tabSize) {
+		return generateMarkDown(Scope.CallerOfCallerWithDelegate, template, tabSize);
+	}
+	
+	private static Recording generateMarkDown(Scope scope, String template, int tabSize) {
 		try {
-			Line currentLine = Stacktraces.currentLine(Scope.CallerOfCaller);
+			Line currentLine = Stacktraces.currentLine(scope);
 			String testClassName = currentLine.className();
 			String testFilename = currentLine.fileName();
 //			System.out.println("Class -> "+testClassName);
 			Class<?> clazz = Class.forName(testClassName);
-			return new Recording(template, templateOf(clazz, template), sourceCodeOf(clazz, testFilename));
+			return new Recording(template, templateOf(clazz, template), tabToSpaces(sourceCodeOf(clazz, testFilename), asSpace(tabSize)));
 		} catch (RuntimeException | ClassNotFoundException rx) {
 			throw new RuntimeException(rx);
 		}
+	}
+
+	private static String asSpace(int tabSize) {
+		char[] data=new char[tabSize];
+		for (int i=0;i<data.length;i++) {
+			data[i]=' ';
+		}
+		return String.copyValueOf(data);
+	}
+	
+	private static List<String> tabToSpaces(List<String> src, String tabSize) {
+		return src.stream()
+				.map(s -> s.replace("\t", tabSize))
+				.collect(Collectors.toList());
 	}
 
 	private static List<String> sourceCodeOf(Class<?> clazz, String testFilename) {
