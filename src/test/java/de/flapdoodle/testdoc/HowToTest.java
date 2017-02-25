@@ -24,11 +24,13 @@ import org.junit.Test;
 public class HowToTest {
 
 	@ClassRule
-	public static Recording recording=Recorder.generateMarkDown("howto.md");
+	public static Recording recording=Recorder.generateMarkDown("howto.md", TabSize.spaces(2))
+		.sourceCodeOf("fooClass", FooClass.class);
 
 	@Test
 	public void theMethodNameIsTheKey() {
 		// everything after this marker ...
+		recording.include(BarClass.class, Includes.WithoutPackage, Includes.Trim, Includes.WithoutImports);
 		recording.begin();
 		
 		boolean sampleVar = true;

@@ -16,107 +16,32 @@
  */
 package de.flapdoodle.testdoc;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.List;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
 import de.flapdoodle.testdoc.Stacktraces.Scope;
 
 public class Recorder {
 
 	public static Recording generateMarkDown(String template) {
-		return generateMarkDown(Scope.CallerOfCallerWithDelegate, template, 8);
+		return generateMarkDown(Scope.CallerOfCallerWithDelegate, template, TabSize.spaces(8));
 	}
 	
-	public static Recording generateMarkDown(String template, int tabSize) {
+	public static Recording generateMarkDown(String template, TabSize tabSize) {
 		return generateMarkDown(Scope.CallerOfCallerWithDelegate, template, tabSize);
 	}
 	
-	private static Recording generateMarkDown(Scope scope, String template, int tabSize) {
+	private static Recording generateMarkDown(Scope scope, String template, TabSize tabSize) {
 		try {
 			Line currentLine = Stacktraces.currentLine(scope);
 			String testClassName = currentLine.className();
 			String testFilename = currentLine.fileName();
 //			System.out.println("Class -> "+testClassName);
 			Class<?> clazz = Class.forName(testClassName);
-			return new Recording(template, templateOf(clazz, template), tabToSpaces(sourceCodeOf(clazz, testFilename), asSpace(tabSize)));
+			return new Recording(template, templateOf(clazz, template), Resources.sourceCodeOf(clazz,  tabSize).get(), tabSize);
 		} catch (RuntimeException | ClassNotFoundException rx) {
 			throw new RuntimeException(rx);
 		}
 	}
-
-	private static String asSpace(int tabSize) {
-		char[] data=new char[tabSize];
-		for (int i=0;i<data.length;i++) {
-			data[i]=' ';
-		}
-		return String.copyValueOf(data);
-	}
-	
-	private static List<String> tabToSpaces(List<String> src, String tabSize) {
-		return src.stream()
-				.map(s -> s.replace("\t", tabSize))
-				.collect(Collectors.toList());
-	}
-
-	private static List<String> sourceCodeOf(Class<?> clazz, String testFilename) {
-		Path current = Paths.get("").toAbsolutePath();
-		
-		Path resolved = current.resolve(Paths.get("src","test","java"));
-		Preconditions.checkArgument(isDir(resolved), "is not a directory: %s", resolved);
-		String[] parts = clazz.getPackage().getName().split("\\.");
-		for (String part : parts) {
-			resolved = resolved.resolve(part);
-			Preconditions.checkArgument(isDir(resolved), "is not a directory: %s", resolved);
-		}
-		
-		Path testFile = resolved.resolve(testFilename);
-		Preconditions.checkArgument(isFile(testFile), "is not a file: %s", testFile);
-		return readLines(() -> new FileInputStream(testFile.toFile()));
-	}
-
-	private static boolean isDir(Path resolved) {
-		File asFile = resolved.toFile();
-		return asFile.isDirectory() && asFile.exists();
-	}
-
-	private static boolean isFile(Path resolved) {
-		File asFile = resolved.toFile();
-		return asFile.isFile() && asFile.exists();
-	}
 	
 	private static String templateOf(Class<?> clazz, String template) {
-		return read(() -> Preconditions.checkNotNull(clazz.getResourceAsStream(template),"could not get %s for %s",template, clazz));
-	}
-
-	public static String read(TrowingSupplier<InputStream> input) {
-		return read(input, buffer -> buffer.lines().collect(Collectors.joining("\n")));
-	}
-	
-	public static List<String> readLines(TrowingSupplier<InputStream> input) {
-		return read(input, buffer -> buffer.lines().collect(Collectors.toList()));
-	}
-	
-	public static <T> T read(TrowingSupplier<InputStream> input, Function<BufferedReader, T> bufferMapping) {
-		try (InputStream is = input.get()) {
-			try (BufferedReader buffer = new BufferedReader(new InputStreamReader(is))) {
-				//return buffer.lines().collect(Collectors.joining("\n"));
-				return bufferMapping.apply(buffer);
-			}
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	static interface TrowingSupplier<T>  {
-		T get() throws Exception;
+		return Resources.read(() -> Preconditions.checkNotNull(clazz.getResourceAsStream(template),"could not get %s for %s",template, clazz));
 	}
 }

@@ -8,8 +8,31 @@ some text
 ${theMethodNameIsTheKey}
 ```
 
+### .. with class include
+
+```
+${theMethodNameIsTheKey.BarClass}
+```
+
+
 ## Sample with more than one block
 
 ```
 ${multipleCodeBlocks}
+```
+
+## Sample with more than one block - alt version
+
+```
+${multipleCodeBlocks.1}
+```
+
+```
+${multipleCodeBlocks.2}
+```
+
+# Includes
+
+```
+${fooClass}
 ```

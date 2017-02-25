@@ -25,9 +25,12 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -42,13 +45,26 @@ public class Recording implements TestRule {
 	private static final String DEST_DIR_PROPERTY = "de.flapdoodle.testdoc.destination";
 	private final String templateName;
 	private final String templateContent;
-	private final List<String> linesOfCode;
+	private final List<String> testSourceCode;
 	private final List<HasLine> lines=new ArrayList<>(); 
+	private final Map<String, String> classes=new LinkedHashMap<>();
+	private final TabSize tabSize;
 
-	public Recording(String templateName, String templateContent, List<String> linesOfCode) {
+	public Recording(String templateName, String templateContent, List<String> testSourceCode, TabSize tabSize) {
+		this.tabSize = tabSize;
 		this.templateName = Preconditions.checkNotNull(templateName, "template name is null");
 		this.templateContent = Preconditions.checkNotNull(templateContent, "template content is null");
-		this.linesOfCode = new ArrayList<>(Preconditions.checkNotNull(linesOfCode, "linesOfCode is null"));
+		this.testSourceCode = new ArrayList<>(Preconditions.checkNotNull(testSourceCode, "linesOfCode is null"));
+	}
+	
+	public Recording sourceCodeOf(String label, Class<?> clazz, Includes ...includeOptions) {
+		Optional<List<String>> sourceCode = Resources.sourceCodeOf(clazz, tabSize, includeOptions);
+		if (!sourceCode.isPresent()) {
+			throw new IllegalArgumentException("could not find sourceCode of "+clazz);
+		}
+		String old = classes.put(label, Resources.joinedWithNewLine(sourceCode.get()));
+		Preconditions.checkArgument(old==null, "sourceCodeOf with label %s was already set to %s",label,old);
+		return this;
 	}
 
 	@Override
@@ -61,7 +77,7 @@ public class Recording implements TestRule {
 				base.evaluate();
 //				System.out.println("after "+base+" -> "+description);
 				
-				String renderedTemplate = renderTemplate(templateName, templateContent, linesOfCode, lines);
+				String renderedTemplate = renderTemplate(templateName, templateContent, testSourceCode, lines, classes);
 				writeResult(templateName, renderedTemplate);
 			}
 		};
@@ -89,7 +105,7 @@ public class Recording implements TestRule {
 //		});
 	}
 
-	protected static String renderTemplate(String templateName, String templateContent, List<String> linesOfCode, List<HasLine> lines) {
+	protected static String renderTemplate(String templateName, String templateContent, List<String> linesOfCode, List<HasLine> lines, Map<String, String> classes) {
 		Map<String, List<HasLine>> usedFilenames = lines.stream()
 			.collect(Collectors.groupingBy((HasLine l) -> l.line().fileName()));
 		
@@ -100,20 +116,34 @@ public class Recording implements TestRule {
 		
 		Map<String, List<String>> recordingsByMethod = recordingsByMethod(methodNames, linesOfCode);
 		
-		return render(templateContent, recordingsByMethod);
+		return render(templateContent, recordingsByMethod, classes);
 	}
 
-	private static String render(String templateContent, Map<String, List<String>> recordingsByMethod) {
+	private static String render(String templateContent, Map<String, List<String>> recordingsByMethod, Map<String, String> classes) {
 		String rendered=templateContent;
+		Set<String> usedLabels=new LinkedHashSet<>();
+		usedLabels.addAll(recordingsByMethod.keySet());
+		
 		for (String method : recordingsByMethod.keySet()) {
 			List<String> blocks = recordingsByMethod.get(method);
 			String formatedBlocks=formatBlocks(blocks);
 //			System.out.println(method+"=\n-------"+formatedBlocks+"\n-------");
 			rendered=rendered.replace("${"+method+"}", formatedBlocks);
+			AtomicInteger counter=new AtomicInteger(0);
+			for (String block : blocks) {
+				String blockLabel = method+"."+counter.incrementAndGet();
+				rendered=rendered.replace("${"+blockLabel+"}", block);
+				usedLabels.add(blockLabel);
+			}
 //			System.out.println("~~~~~~~~~~~~~");
 //			System.out.println(rendered);
 //			System.out.println("~~~~~~~~~~~~~");
 		};
+		for (String label : classes.keySet()) {
+			Preconditions.checkArgument(!usedLabels.contains(label), "rendering failed, %s already used: %s", label, usedLabels);
+			String content=classes.get(label);
+			rendered=rendered.replace("${"+label+"}", content);
+		}
 		return rendered;
 	}
 
@@ -190,6 +220,12 @@ public class Recording implements TestRule {
 		return subList;
 	}
 
+	public void include(Class<?> clazz, Includes ...includeOptions) {
+		Line currentLine = Stacktraces.currentLine(Scope.CallerOfCaller);
+		String label=currentLine.methodName()+"."+clazz.getSimpleName();
+		sourceCodeOf(label, clazz, includeOptions);
+	}
+	
 	public void begin() {
 		Line currentLine = Stacktraces.currentLine(Scope.CallerOfCaller);
 //		System.out.println("begin -> "+currentLine);
