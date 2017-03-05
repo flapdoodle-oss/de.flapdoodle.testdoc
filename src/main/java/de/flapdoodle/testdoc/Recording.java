@@ -48,6 +48,7 @@ public class Recording implements TestRule {
 	private final List<String> testSourceCode;
 	private final List<HasLine> lines=new ArrayList<>(); 
 	private final Map<String, String> classes=new LinkedHashMap<>();
+	private final Map<String, String> output=new LinkedHashMap<>();
 	private final TabSize tabSize;
 
 	public Recording(String templateName, String templateContent, List<String> testSourceCode, TabSize tabSize) {
@@ -77,7 +78,7 @@ public class Recording implements TestRule {
 				base.evaluate();
 //				System.out.println("after "+base+" -> "+description);
 				
-				String renderedTemplate = renderTemplate(templateName, templateContent, testSourceCode, lines, classes);
+				String renderedTemplate = renderTemplate(templateName, templateContent, testSourceCode, lines, classes, output);
 				writeResult(templateName, renderedTemplate);
 			}
 		};
@@ -105,7 +106,7 @@ public class Recording implements TestRule {
 //		});
 	}
 
-	protected static String renderTemplate(String templateName, String templateContent, List<String> linesOfCode, List<HasLine> lines, Map<String, String> classes) {
+	protected static String renderTemplate(String templateName, String templateContent, List<String> linesOfCode, List<HasLine> lines, Map<String, String> classes, Map<String, String> output) {
 		Map<String, List<HasLine>> usedFilenames = lines.stream()
 			.collect(Collectors.groupingBy((HasLine l) -> l.line().fileName()));
 		
@@ -116,10 +117,10 @@ public class Recording implements TestRule {
 		
 		Map<String, List<String>> recordingsByMethod = recordingsByMethod(methodNames, linesOfCode);
 		
-		return render(templateContent, recordingsByMethod, classes);
+		return render(templateContent, recordingsByMethod, classes, output);
 	}
 
-	private static String render(String templateContent, Map<String, List<String>> recordingsByMethod, Map<String, String> classes) {
+	private static String render(String templateContent, Map<String, List<String>> recordingsByMethod, Map<String, String> classes, Map<String, String> output) {
 		String rendered=templateContent;
 		Set<String> usedLabels=new LinkedHashSet<>();
 		usedLabels.addAll(recordingsByMethod.keySet());
@@ -142,6 +143,11 @@ public class Recording implements TestRule {
 		for (String label : classes.keySet()) {
 			Preconditions.checkArgument(!usedLabels.contains(label), "rendering failed, %s already used: %s", label, usedLabels);
 			String content=classes.get(label);
+			rendered=rendered.replace("${"+label+"}", content);
+		}
+		for (String label : output.keySet()) {
+			Preconditions.checkArgument(!usedLabels.contains(label), "rendering failed, %s already used: %s", label, usedLabels);
+			String content=output.get(label);
 			rendered=rendered.replace("${"+label+"}", content);
 		}
 		return rendered;
@@ -226,6 +232,13 @@ public class Recording implements TestRule {
 		sourceCodeOf(label, clazz, includeOptions);
 	}
 	
+	public void output(String label, String content) {
+		Line currentLine = Stacktraces.currentLine(Scope.CallerOfCaller);
+		String scopedLabel=currentLine.methodName()+"."+label;
+		String old = output.put(scopedLabel, content);
+		Preconditions.checkArgument(old==null, "%s already set to %s",label, old);
+	}
+
 	public void begin() {
 		Line currentLine = Stacktraces.currentLine(Scope.CallerOfCaller);
 //		System.out.println("begin -> "+currentLine);
