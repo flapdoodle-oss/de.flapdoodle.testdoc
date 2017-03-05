@@ -89,7 +89,7 @@ public class Recording implements TestRule {
 		if (destination!=null) {
 			Path output = Paths.get(destination).resolve(templateName);
 			try {
-				Files.write(output, renderedTemplate.getBytes(Charset.forName("UTF-8")), StandardOpenOption.WRITE,StandardOpenOption.CREATE);
+				Files.write(output, renderedTemplate.getBytes(Charset.forName("UTF-8")), StandardOpenOption.WRITE,StandardOpenOption.CREATE,StandardOpenOption.TRUNCATE_EXISTING);
 			} catch (IOException iox) {
 				throw new RuntimeException("could not write "+output,iox);
 			}
