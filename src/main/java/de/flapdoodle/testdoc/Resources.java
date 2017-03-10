@@ -38,6 +38,11 @@ abstract class Resources {
 		// no instance
 	}
 	
+	public static Optional<String> resource(Class<?> clazz, String resourceName) {
+		return Optional.ofNullable(clazz.getResourceAsStream(resourceName))
+			.map(is -> read(() -> is));
+	}
+	
 	public static Optional<List<String>> sourceCodeOf(Class<?> clazz, TabSize tabSize, Includes...options) {
 		List<Path> codeRoots = sourceCodeRoots();
 		Preconditions.checkArgument(!codeRoots.isEmpty(), "no sourceCodeRoots found");

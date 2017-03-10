@@ -25,11 +25,9 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -38,6 +36,7 @@ import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
+import de.flapdoodle.testdoc.ImmutableReplacements.Builder;
 import de.flapdoodle.testdoc.Stacktraces.Scope;
 
 public class Recording implements TestRule {
@@ -48,6 +47,7 @@ public class Recording implements TestRule {
 	private final List<String> testSourceCode;
 	private final List<HasLine> lines=new ArrayList<>(); 
 	private final Map<String, String> classes=new LinkedHashMap<>();
+	private final Map<String, String> resources=new LinkedHashMap<>();
 	private final Map<String, String> output=new LinkedHashMap<>();
 	private final TabSize tabSize;
 
@@ -60,14 +60,20 @@ public class Recording implements TestRule {
 	
 	public Recording sourceCodeOf(String label, Class<?> clazz, Includes ...includeOptions) {
 		Optional<List<String>> sourceCode = Resources.sourceCodeOf(clazz, tabSize, includeOptions);
-		if (!sourceCode.isPresent()) {
-			throw new IllegalArgumentException("could not find sourceCode of "+clazz);
-		}
+		Preconditions.checkArgument(sourceCode.isPresent(), "could not find sourceCode of %s",clazz);
 		String old = classes.put(label, Resources.joinedWithNewLine(sourceCode.get()));
 		Preconditions.checkArgument(old==null, "sourceCodeOf with label %s was already set to %s",label,old);
 		return this;
 	}
 
+	public Recording resource(String label, Class<?> clazz, String resourceName) {
+		Optional<String> resource = Resources.resource(clazz, resourceName);
+		Preconditions.checkArgument(resource.isPresent(), "could not find resource of %s:%s",clazz,resourceName);
+		String old = resources.put(label, resource.get());
+		Preconditions.checkArgument(old==null, "resource with label %s was already set to %s",label,old);
+		return this;
+	}
+	
 	@Override
 	public Statement apply(Statement base, Description description) {
 		return new Statement() {
@@ -121,36 +127,23 @@ public class Recording implements TestRule {
 	}
 
 	private static String render(String templateContent, Map<String, List<String>> recordingsByMethod, Map<String, String> classes, Map<String, String> output) {
-		String rendered=templateContent;
-		Set<String> usedLabels=new LinkedHashSet<>();
-		usedLabels.addAll(recordingsByMethod.keySet());
-		
-		for (String method : recordingsByMethod.keySet()) {
-			List<String> blocks = recordingsByMethod.get(method);
-			String formatedBlocks=formatBlocks(blocks);
-//			System.out.println(method+"=\n-------"+formatedBlocks+"\n-------");
-			rendered=rendered.replace("${"+method+"}", formatedBlocks);
+		Map<String, String> joinedMap = merge(recordingsByMethod, classes, output);
+		return Template.render(templateContent, joinedMap);
+	}
+
+	private static Map<String, String> merge(Map<String, List<String>> recordingsByMethod, Map<String, String> classes, Map<String, String> output) {
+		Builder builder = Template.Replacements.builder();
+		recordingsByMethod.forEach((method, blocks) -> {
+			builder.putReplacement(method, formatBlocks(blocks));
 			AtomicInteger counter=new AtomicInteger(0);
 			for (String block : blocks) {
 				String blockLabel = method+"."+counter.incrementAndGet();
-				rendered=rendered.replace("${"+blockLabel+"}", block);
-				usedLabels.add(blockLabel);
+				builder.putReplacement(blockLabel, block);
 			}
-//			System.out.println("~~~~~~~~~~~~~");
-//			System.out.println(rendered);
-//			System.out.println("~~~~~~~~~~~~~");
-		};
-		for (String label : classes.keySet()) {
-			Preconditions.checkArgument(!usedLabels.contains(label), "rendering failed, %s already used: %s", label, usedLabels);
-			String content=classes.get(label);
-			rendered=rendered.replace("${"+label+"}", content);
-		}
-		for (String label : output.keySet()) {
-			Preconditions.checkArgument(!usedLabels.contains(label), "rendering failed, %s already used: %s", label, usedLabels);
-			String content=output.get(label);
-			rendered=rendered.replace("${"+label+"}", content);
-		}
-		return rendered;
+		});
+		builder.putAllReplacement(classes);
+		builder.putAllReplacement(output);
+		return builder.build().replacement();
 	}
 
 	private static String formatBlocks(List<String> blocks) {
@@ -230,6 +223,12 @@ public class Recording implements TestRule {
 		Line currentLine = Stacktraces.currentLine(Scope.CallerOfCaller);
 		String label=currentLine.methodName()+"."+clazz.getSimpleName();
 		sourceCodeOf(label, clazz, includeOptions);
+	}
+	
+	public void resource(Class<?> clazz, String resourceName) {
+		Line currentLine = Stacktraces.currentLine(Scope.CallerOfCaller);
+		String label=currentLine.methodName()+"."+clazz.getSimpleName()+":"+resourceName;
+		resource(label, clazz, resourceName);
 	}
 	
 	public void output(String label, String content) {
