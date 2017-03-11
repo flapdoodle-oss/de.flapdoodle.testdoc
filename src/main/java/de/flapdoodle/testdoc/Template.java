@@ -17,6 +17,8 @@
 package de.flapdoodle.testdoc;
 
 import java.util.Map;
+import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -29,7 +31,17 @@ public abstract class Template {
 	
 	public static String render(String template, Map<String, String> replacements) {
 		return render(template, key -> {
-			return Preconditions.checkNotNull(replacements.get(key),"could not resolve %s in %s",key, replacements);
+			return Preconditions.checkNotNull(replacements.get(key),"could not resolve %s in %s",key, replacements.keySet());
+		});
+	}
+	
+	public static String render(String template, Map<String, String> replacements, BiFunction<String, Set<String>, String> fallback) {
+		return render(template, key -> {
+			String replacement = replacements.get(key);
+			if (replacement==null) {
+				replacement=Preconditions.checkNotNull(fallback.apply(key, replacements.keySet()),"fallback return null for %s", key);
+			}
+			return replacement;
 		});
 	}
 	

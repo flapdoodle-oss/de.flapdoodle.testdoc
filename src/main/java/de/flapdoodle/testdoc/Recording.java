@@ -25,10 +25,15 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -50,7 +55,8 @@ public class Recording implements TestRule {
 	private final Map<String, String> resources=new LinkedHashMap<>();
 	private final Map<String, String> output=new LinkedHashMap<>();
 	private final TabSize tabSize;
-
+	private Optional<BiFunction<String, Set<String>, String>> replacementNotFoundFallback=Optional.empty();
+	
 	public Recording(String templateName, String templateContent, List<String> testSourceCode, TabSize tabSize) {
 		this.tabSize = tabSize;
 		this.templateName = Preconditions.checkNotNull(templateName, "template name is null");
@@ -66,11 +72,17 @@ public class Recording implements TestRule {
 		return this;
 	}
 
-	public Recording resource(String label, Class<?> clazz, String resourceName) {
+	public Recording resource(String label, Class<?> clazz, String resourceName, ResourceFilter ... filters) {
 		Optional<String> resource = Resources.resource(clazz, resourceName);
 		Preconditions.checkArgument(resource.isPresent(), "could not find resource of %s:%s",clazz,resourceName);
-		String old = resources.put(label, resource.get());
+		String old = resources.put(label, resource.map(ResourceFilter.join(filters)).get());
 		Preconditions.checkArgument(old==null, "resource with label %s was already set to %s",label,old);
+		return this;
+	}
+	
+	public Recording replacementNotFoundFallback(BiFunction<String, Set<String>, String> fallback) {
+		Preconditions.checkArgument(!replacementNotFoundFallback.isPresent(), "already set to: %s", replacementNotFoundFallback);
+		this.replacementNotFoundFallback = Optional.of(fallback);
 		return this;
 	}
 	
@@ -84,7 +96,7 @@ public class Recording implements TestRule {
 				base.evaluate();
 //				System.out.println("after "+base+" -> "+description);
 				
-				String renderedTemplate = renderTemplate(templateName, templateContent, testSourceCode, lines, classes, output);
+				String renderedTemplate = renderTemplate(templateName, templateContent, testSourceCode, lines, classes, resources, output, replacementNotFoundFallback);
 				writeResult(templateName, renderedTemplate);
 			}
 		};
@@ -112,7 +124,7 @@ public class Recording implements TestRule {
 //		});
 	}
 
-	protected static String renderTemplate(String templateName, String templateContent, List<String> linesOfCode, List<HasLine> lines, Map<String, String> classes, Map<String, String> output) {
+	protected static String renderTemplate(String templateName, String templateContent, List<String> linesOfCode, List<HasLine> lines, Map<String, String> classes, Map<String, String> resources, Map<String, String> output, Optional<BiFunction<String, Set<String>, String>> replacementNotFoundFallback) {
 		Map<String, List<HasLine>> usedFilenames = lines.stream()
 			.collect(Collectors.groupingBy((HasLine l) -> l.line().fileName()));
 		
@@ -123,29 +135,44 @@ public class Recording implements TestRule {
 		
 		Map<String, List<String>> recordingsByMethod = recordingsByMethod(methodNames, linesOfCode);
 		
-		return render(templateContent, recordingsByMethod, classes, output);
+		return render(templateContent, recordingsByMethod, classes, resources, output, replacementNotFoundFallback);
 	}
 
-	private static String render(String templateContent, Map<String, List<String>> recordingsByMethod, Map<String, String> classes, Map<String, String> output) {
-		Map<String, String> joinedMap = merge(recordingsByMethod, classes, output);
-		return Template.render(templateContent, joinedMap);
+	private static String render(String templateContent, Map<String, List<String>> recordingsByMethod, Map<String, String> classes, Map<String, String> resources, Map<String, String> output, Optional<BiFunction<String, Set<String>, String>> replacementNotFoundFallback) {
+		Map<String, String> joinedMap = merge(recordingsByMethod, classes, resources, output);
+		return replacementNotFoundFallback.isPresent() 
+				? Template.render(templateContent, joinedMap, replacementNotFoundFallback.get()) 
+				: Template.render(templateContent, joinedMap);
 	}
 
-	private static Map<String, String> merge(Map<String, List<String>> recordingsByMethod, Map<String, String> classes, Map<String, String> output) {
+	private static Map<String, String> merge(Map<String, List<String>> recordingsByMethod, Map<String, String> classes, Map<String, String> resources, Map<String, String> output) {
+		Set<String> usedKeys=new LinkedHashSet<>();
+		
 		Builder builder = Template.Replacements.builder();
 		recordingsByMethod.forEach((method, blocks) -> {
 			builder.putReplacement(method, formatBlocks(blocks));
+			usedKeys.add(method);
+			
 			AtomicInteger counter=new AtomicInteger(0);
 			for (String block : blocks) {
 				String blockLabel = method+"."+counter.incrementAndGet();
 				builder.putReplacement(blockLabel, block);
+				usedKeys.add(blockLabel);
 			}
 		});
-		builder.putAllReplacement(classes);
-		builder.putAllReplacement(output);
+		
+		Function<String, BiConsumer<? super String, ? super String>> checkAndAddToBuilderFactory=scope -> (key, value) -> {
+			Preconditions.checkArgument(!usedKeys.contains(key), scope+": already set: %s",key);
+			builder.putReplacement(key, value);
+			usedKeys.add(key);
+		}; 
+		
+		classes.forEach(checkAndAddToBuilderFactory.apply("classes"));
+		resources.forEach(checkAndAddToBuilderFactory.apply("resources"));
+		output.forEach(checkAndAddToBuilderFactory.apply("output"));
 		return builder.build().replacement();
 	}
-
+	
 	private static String formatBlocks(List<String> blocks) {
 		return blocks.stream().collect(Collectors.joining("\n...\n\n"));
 	}
@@ -225,10 +252,10 @@ public class Recording implements TestRule {
 		sourceCodeOf(label, clazz, includeOptions);
 	}
 	
-	public void resource(Class<?> clazz, String resourceName) {
+	public void resource(Class<?> clazz, String resourceName, ResourceFilter... filters) {
 		Line currentLine = Stacktraces.currentLine(Scope.CallerOfCaller);
 		String label=currentLine.methodName()+"."+clazz.getSimpleName()+":"+resourceName;
-		resource(label, clazz, resourceName);
+		resource(label, clazz, resourceName, filters);
 	}
 	
 	public void output(String label, String content) {
