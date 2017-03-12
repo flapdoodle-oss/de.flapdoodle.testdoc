@@ -20,11 +20,11 @@ import de.flapdoodle.testdoc.Stacktraces.Scope;
 
 public class Recorder {
 
-	public static Recording generateMarkDown(String template) {
+	public static Recording with(String template) {
 		return generateMarkDown(Scope.CallerOfCallerWithDelegate, template, TabSize.spaces(8));
 	}
 	
-	public static Recording generateMarkDown(String template, TabSize tabSize) {
+	public static Recording with(String template, TabSize tabSize) {
 		return generateMarkDown(Scope.CallerOfCallerWithDelegate, template, tabSize);
 	}
 	
@@ -32,13 +32,17 @@ public class Recorder {
 		try {
 			Line currentLine = Stacktraces.currentLine(scope);
 			String testClassName = currentLine.className();
-			String testFilename = currentLine.fileName();
+//			String testFilename = currentLine.fileName();
 //			System.out.println("Class -> "+testClassName);
 			Class<?> clazz = Class.forName(testClassName);
-			return new Recording(template, templateOf(clazz, template), Resources.sourceCodeOf(clazz,  tabSize).get(), tabSize);
+			return with(clazz, template, tabSize);
 		} catch (RuntimeException | ClassNotFoundException rx) {
 			throw new RuntimeException(rx);
 		}
+	}
+
+	protected static Recording with(Class<?> clazz, String template, TabSize tabSize) {
+		return new Recording(template, templateOf(clazz, template), Resources.sourceCodeOf(clazz,  tabSize).get(), tabSize);
 	}
 	
 	private static String templateOf(Class<?> clazz, String template) {

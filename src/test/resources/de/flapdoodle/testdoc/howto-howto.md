@@ -12,28 +12,8 @@ ${howToTest.md}
 
 ... add a property in your `pom.xml` :
 
-${includeResources.HowToHowToTest:howto-howto-pom.txt}
+${includeResources.HowToHowToTest:howto-howto-pom.part}
 
 ... and you will get this:
 
-	# How To
-
-	some text
-
-	## Simple Sample 
-
-	```
-
-	boolean sampleVar = true;
-	assertTrue(sampleVar);
-
-	```
-
-	## Sample with more than one block
-
-	```
-	// first block
-	...
-
-	// second block
-	```
+${runTest.renderResult}

@@ -33,6 +33,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -47,6 +48,8 @@ import de.flapdoodle.testdoc.Stacktraces.Scope;
 public class Recording implements TestRule {
 
 	private static final String DEST_DIR_PROPERTY = "de.flapdoodle.testdoc.destination";
+	private static final ThreadLocal<BiConsumer<String, String>> templateConsumer=new ThreadLocal<>();
+	
 	private final String templateName;
 	private final String templateContent;
 	private final List<String> testSourceCode;
@@ -103,25 +106,26 @@ public class Recording implements TestRule {
 	}
 	
 	protected static void writeResult(String templateName, String renderedTemplate) {
-		String destination = System.getProperty(DEST_DIR_PROPERTY);
-		if (destination!=null) {
-			Path output = Paths.get(destination).resolve(templateName);
-			try {
-				Files.write(output, renderedTemplate.getBytes(Charset.forName("UTF-8")), StandardOpenOption.WRITE,StandardOpenOption.CREATE,StandardOpenOption.TRUNCATE_EXISTING);
-			} catch (IOException iox) {
-				throw new RuntimeException("could not write "+output,iox);
-			}
+		if (templateConsumer.get()!=null) {
+			templateConsumer.get().accept(templateName, renderedTemplate);
 		} else {
-			System.out.println(DEST_DIR_PROPERTY+" not set");
-			System.out.println("---------------------------");
-			System.out.println("should write "+templateName);
-			System.out.println("---------------------------");
-			System.out.println(renderedTemplate);
-			System.out.println("---------------------------");
+			String destination = System.getProperty(DEST_DIR_PROPERTY);
+			if (destination!=null) {
+				Path output = Paths.get(destination).resolve(templateName);
+				try {
+					Files.write(output, renderedTemplate.getBytes(Charset.forName("UTF-8")), StandardOpenOption.WRITE,StandardOpenOption.CREATE,StandardOpenOption.TRUNCATE_EXISTING);
+				} catch (IOException iox) {
+					throw new RuntimeException("could not write "+output,iox);
+				}
+			} else {
+				System.out.println(DEST_DIR_PROPERTY+" not set");
+				System.out.println("---------------------------");
+				System.out.println("should write "+templateName);
+				System.out.println("---------------------------");
+				System.out.println(renderedTemplate);
+				System.out.println("---------------------------");
+			}
 		}
-//		System.getProperties().forEach((key, val) -> {
-//			System.out.println(key+"="+val);
-//		});
 	}
 
 	protected static String renderTemplate(String templateName, String templateContent, List<String> linesOfCode, List<HasLine> lines, Map<String, String> classes, Map<String, String> resources, Map<String, String> output, Optional<BiFunction<String, Set<String>, String>> replacementNotFoundFallback) {
@@ -275,5 +279,22 @@ public class Recording implements TestRule {
 		Line currentLine = Stacktraces.currentLine(Scope.CallerOfCaller);
 //		System.out.println("end -> "+currentLine);
 		lines.add(End.of(currentLine));
+	}
+	
+	private static BiConsumer<String, String> setTemplateConsumerForInternalUse(BiConsumer<String, String> consumer) {
+		BiConsumer<String, String> old = templateConsumer.get();
+		templateConsumer.set(consumer);
+		return old;
+	}
+	
+	protected static Consumer<Runnable> runWithTemplateConsumer(BiConsumer<String, String> consumer) {
+		return runnable -> {
+			BiConsumer<String, String> old = setTemplateConsumerForInternalUse(consumer);
+			try {
+				runnable.run();
+			} finally {
+				setTemplateConsumerForInternalUse(old);
+			}
+		};
 	}
 }

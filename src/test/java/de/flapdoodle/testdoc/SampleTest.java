@@ -24,7 +24,7 @@ import org.junit.Test;
 public class SampleTest {
 	
 	@ClassRule
-	public static Recording recording=Recorder.generateMarkDown("sample.md");
+	public static Recording recording=Recorder.with("sample.md");
 
 	@Test
 	public void firstMethod() {

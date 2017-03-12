@@ -16,19 +16,60 @@
  */
 package de.flapdoodle.testdoc;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
+import java.util.concurrent.atomic.AtomicReference;
+
 import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.runner.JUnitCore;
+import org.junit.runner.Result;
 
 public class HowToHowToTest {
 
 	@ClassRule
-	public static Recording recording=Recorder.generateMarkDown("howto-howto.md", TabSize.spaces(2))
+	public static Recording recording=Recorder.with("howto-howto.md", TabSize.spaces(2))
 		.sourceCodeOf("howToTest", HowToTest.class, Includes.WithoutPackage, Includes.WithoutImports, Includes.Trim)
 		.resource("howToTest.md", HowToTest.class, "howto.md", ResourceFilter.indent("\t"))
-		.replacementNotFoundFallback((key, keys) -> "${"+key+"->not found in "+keys+"}");
+//		.replacementNotFoundFallback((key, keys) -> "${"+key+"->not found in "+keys+"}")
+		;
 
 	@Test
 	public void includeResources() {
-		recording.resource(getClass(), "howto-howto-pom.txt", ResourceFilter.indent("\t"));
+		recording.resource(getClass(), "howto-howto-pom.part", ResourceFilter.indent("\t"));
+	}
+	
+	@Test
+//	@Ignore
+	public void runTest() {
+		AtomicReference<String> renderedOutput=new AtomicReference<String>();
+		
+		// redirect output for the following recording
+		Recording.runWithTemplateConsumer((name, content) -> {
+			renderedOutput.set(content);
+		}).accept(() -> {
+			
+			// recover current recording instance from test class
+			Recording oldRecording = HowToTest.recording;
+			
+			// recreate static recording test instance
+			HowToTest.recording=Recorder.with(HowToTest.class, "howto.md", TabSize.spaces(2))
+				.sourceCodeOf("fooClass", FooClass.class);
+				
+			// run junit
+			JUnitCore junit = new JUnitCore();
+			Result result = junit.run(HowToTest.class);
+			assertEquals(0, result.getFailureCount());
+			
+			// restore recording instance
+			HowToTest.recording=oldRecording;
+			
+		});
+		
+		// extract recorded content
+		String content = renderedOutput.get();
+		assertNotNull("renderedTemplate", content);
+		recording.output("renderResult", ResourceFilter.indent("\t").apply(content));
 	}
 }

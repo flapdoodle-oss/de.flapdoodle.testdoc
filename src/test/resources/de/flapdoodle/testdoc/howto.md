@@ -36,3 +36,7 @@ ${multipleCodeBlocks.2}
 ```
 ${fooClass}
 ```
+
+```
+${theMethodNameIsTheKey.BarClass}
+```

@@ -24,7 +24,7 @@ import org.junit.Test;
 public class HowToTest {
 
 	@ClassRule
-	public static Recording recording=Recorder.generateMarkDown("howto.md", TabSize.spaces(2))
+	public static Recording recording=Recorder.with("howto.md", TabSize.spaces(2))
 		.sourceCodeOf("fooClass", FooClass.class);
 
 	@Test
