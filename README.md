@@ -9,12 +9,12 @@ simple doc generator based on unit tests
 
 ### Maven
 
-Stable (Maven Central Repository, Released: 12.03.2017 - wait 24hrs for [maven central](http://repo1.maven.org/maven2/de/flapdoodle/guava/de.flapdoodle.testdoc/maven-metadata.xml))
+Stable (Maven Central Repository, Released: 09.04.2017 - wait 24hrs for [maven central](http://repo1.maven.org/maven2/de/flapdoodle/guava/de.flapdoodle.testdoc/maven-metadata.xml))
 
 	<dependency>
 		<groupId>de.flapdoodle.testdoc</groupId>
 		<artifactId>de.flapdoodle.testdoc</artifactId>
-		<version>1.2.0</version>
+		<version>1.2.1</version>
 	</dependency>
 
 Snapshots (Repository http://oss.sonatype.org/content/repositories/snapshots)
@@ -22,7 +22,7 @@ Snapshots (Repository http://oss.sonatype.org/content/repositories/snapshots)
 	<dependency>
 		<groupId>de.flapdoodle.testdoc</groupId>
 		<artifactId>de.flapdoodle.testdoc</artifactId>
-		<version>1.2.1-SNAPSHOT</version>
+		<version>1.2.2-SNAPSHOT</version>
 	</dependency>
 
 ### Usage
