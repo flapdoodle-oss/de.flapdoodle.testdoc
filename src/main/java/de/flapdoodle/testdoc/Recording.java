@@ -42,6 +42,7 @@ import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
+import de.flapdoodle.checks.Preconditions;
 import de.flapdoodle.testdoc.ImmutableReplacements.Builder;
 import de.flapdoodle.testdoc.Stacktraces.Scope;
 

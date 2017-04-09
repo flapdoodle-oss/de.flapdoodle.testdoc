@@ -25,6 +25,8 @@ import java.util.regex.Pattern;
 
 import org.immutables.value.Value;
 
+import de.flapdoodle.checks.Preconditions;
+
 public abstract class Template {
 
 	private static Pattern VAR_PATTERN=Pattern.compile("(?<all>\\$\\{(?<label>[a-zA-Z0-9\\-_:\\.]+)\\})");

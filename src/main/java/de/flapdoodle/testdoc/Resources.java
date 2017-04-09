@@ -32,6 +32,9 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import de.flapdoodle.checks.Preconditions;
+import de.flapdoodle.types.ThrowingSupplier;
+
 abstract class Resources {
 
 	private Resources() {
@@ -141,7 +144,7 @@ abstract class Resources {
 		return asFile.isFile() && asFile.exists();
 	}
 	
-	public static String read(TrowingSupplier<InputStream> input) {
+	public static String read(ThrowingSupplier<InputStream,?> input) {
 		return read(input, buffer -> buffer.lines().collect(Collectors.joining("\n")));
 	}
 	
@@ -149,14 +152,13 @@ abstract class Resources {
 		return lines.stream().collect(Collectors.joining("\n"));
 	}
 	
-	public static List<String> readLines(TrowingSupplier<InputStream> input) {
+	public static List<String> readLines(ThrowingSupplier<InputStream,?> input) {
 		return read(input, buffer -> buffer.lines().collect(Collectors.toList()));
 	}
 	
-	public static <T> T read(TrowingSupplier<InputStream> input, Function<BufferedReader, T> bufferMapping) {
+	public static <T,E extends Exception> T read(ThrowingSupplier<InputStream,E> input, Function<BufferedReader, T> bufferMapping) {
 		try (InputStream is = input.get()) {
 			try (BufferedReader buffer = new BufferedReader(new InputStreamReader(is))) {
-				//return buffer.lines().collect(Collectors.joining("\n"));
 				return bufferMapping.apply(buffer);
 			}
 		}

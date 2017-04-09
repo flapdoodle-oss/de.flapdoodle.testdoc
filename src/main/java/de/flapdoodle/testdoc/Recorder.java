@@ -16,6 +16,7 @@
  */
 package de.flapdoodle.testdoc;
 
+import de.flapdoodle.checks.Preconditions;
 import de.flapdoodle.testdoc.Stacktraces.Scope;
 
 public class Recorder {
