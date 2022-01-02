@@ -18,26 +18,10 @@ package de.flapdoodle.testdoc;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.junit.jupiter.engine.JupiterTestEngine;
-import org.junit.runner.JUnitCore;
-import org.junit.runner.Result;
-
-import static org.junit.platform.engine.discovery.ClassNameFilter.includeClassNamePatterns;
-import static org.junit.platform.engine.discovery.DiscoverySelectors.selectClass;
-import static org.junit.platform.engine.discovery.DiscoverySelectors.selectPackage;
-
-
-import org.junit.platform.engine.FilterResult;
-import org.junit.platform.engine.TestDescriptor;
 import org.junit.platform.launcher.Launcher;
-import org.junit.platform.launcher.LauncherDiscoveryListener;
 import org.junit.platform.launcher.LauncherDiscoveryRequest;
 import org.junit.platform.launcher.LauncherSession;
-import org.junit.platform.launcher.LauncherSessionListener;
-import org.junit.platform.launcher.PostDiscoveryFilter;
-import org.junit.platform.launcher.TestExecutionListener;
 import org.junit.platform.launcher.TestPlan;
-import org.junit.platform.launcher.core.LauncherConfig;
 import org.junit.platform.launcher.core.LauncherDiscoveryRequestBuilder;
 import org.junit.platform.launcher.core.LauncherFactory;
 import org.junit.platform.launcher.listeners.SummaryGeneratingListener;
@@ -48,6 +32,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.platform.engine.discovery.DiscoverySelectors.selectClass;
 
 public class HowToHowToTest {
 
