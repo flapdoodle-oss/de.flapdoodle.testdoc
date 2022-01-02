@@ -16,14 +16,14 @@
  */
 package de.flapdoodle.testdoc;
 
-import static org.junit.Assert.assertEquals;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
-import org.junit.ClassRule;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class SampleTest {
 	
-	@ClassRule
+	@RegisterExtension
 	public static Recording recording=Recorder.with("sample.md");
 
 	@Test

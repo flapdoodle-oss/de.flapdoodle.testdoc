@@ -16,19 +16,42 @@
  */
 package de.flapdoodle.testdoc;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-
-import java.util.concurrent.atomic.AtomicReference;
-
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.engine.JupiterTestEngine;
 import org.junit.runner.JUnitCore;
 import org.junit.runner.Result;
 
+import static org.junit.platform.engine.discovery.ClassNameFilter.includeClassNamePatterns;
+import static org.junit.platform.engine.discovery.DiscoverySelectors.selectClass;
+import static org.junit.platform.engine.discovery.DiscoverySelectors.selectPackage;
+
+
+import org.junit.platform.engine.FilterResult;
+import org.junit.platform.engine.TestDescriptor;
+import org.junit.platform.launcher.Launcher;
+import org.junit.platform.launcher.LauncherDiscoveryListener;
+import org.junit.platform.launcher.LauncherDiscoveryRequest;
+import org.junit.platform.launcher.LauncherSession;
+import org.junit.platform.launcher.LauncherSessionListener;
+import org.junit.platform.launcher.PostDiscoveryFilter;
+import org.junit.platform.launcher.TestExecutionListener;
+import org.junit.platform.launcher.TestPlan;
+import org.junit.platform.launcher.core.LauncherConfig;
+import org.junit.platform.launcher.core.LauncherDiscoveryRequestBuilder;
+import org.junit.platform.launcher.core.LauncherFactory;
+import org.junit.platform.launcher.listeners.SummaryGeneratingListener;
+import org.junit.platform.launcher.listeners.TestExecutionSummary;
+
+import java.io.PrintWriter;
+import java.util.concurrent.atomic.AtomicReference;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 public class HowToHowToTest {
 
-	@ClassRule
+	@RegisterExtension
 	public static Recording recording=Recorder.with("howto-howto.md", TabSize.spaces(2))
 		.sourceCodeOf("howToTest", HowToTest.class, Includes.WithoutPackage, Includes.WithoutImports, Includes.Trim)
 		.resource("howToTest.md", HowToTest.class, "howto.md", ResourceFilter.indent("\t"))
@@ -50,26 +73,50 @@ public class HowToHowToTest {
 			renderedOutput.set(content);
 		}).accept(() -> {
 			
-			// recover current recording instance from test class
-			Recording oldRecording = HowToTest.recording;
-			
-			// recreate static recording test instance
-			HowToTest.recording=Recorder.with(HowToTest.class, "howto.md", TabSize.spaces(2))
-				.sourceCodeOf("fooClass", FooClass.class);
-				
 			// run junit
-			JUnitCore junit = new JUnitCore();
-			Result result = junit.run(HowToTest.class);
-			assertEquals(0, result.getFailureCount());
-			
-			// restore recording instance
-			HowToTest.recording=oldRecording;
+			LauncherDiscoveryRequest request = LauncherDiscoveryRequestBuilder.request()
+				.selectors(
+					selectClass(HowToTest.class)
+				)
+				.build();
+
+			SummaryGeneratingListener listener = new SummaryGeneratingListener();
+
+			try (LauncherSession session = LauncherFactory.openSession()) {
+				Launcher launcher = session.getLauncher();
+				// Register a listener of your choice
+				launcher.registerTestExecutionListeners(listener);
+				// Discover tests and build a test plan
+				TestPlan testPlan = launcher.discover(request);
+
+				// recover current recording instance from test class
+				Recording oldRecording = HowToTest.recording;
+
+				// recreate static recording test instance
+				HowToTest.recording=Recorder.with(HowToTest.class, "howto.md", TabSize.spaces(2))
+					.sourceCodeOf("fooClass", FooClass.class);
+
+
+				// Execute test plan
+				launcher.execute(testPlan);
+//				// Alternatively, execute the request directly
+//				launcher.execute(request);
+
+				
+				// restore recording instance
+				HowToTest.recording=oldRecording;
+			}
+
+			TestExecutionSummary summary = listener.getSummary();
+			summary.printFailuresTo(new PrintWriter(System.out), 10);
+
+			assertEquals(0, summary.getFailures().size());
 			
 		});
 		
 		// extract recorded content
 		String content = renderedOutput.get();
-		assertNotNull("renderedTemplate", content);
+		assertNotNull(content, "renderedTemplate");
 		recording.output("renderResult", ResourceFilter.indent("\t").apply(content));
 	}
 }

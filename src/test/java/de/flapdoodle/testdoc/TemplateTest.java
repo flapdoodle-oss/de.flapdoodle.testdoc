@@ -16,12 +16,13 @@
  */
 package de.flapdoodle.testdoc;
 
-import static org.junit.Assert.assertEquals;
+
+import org.junit.jupiter.api.Test;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TemplateTest {
 

@@ -16,14 +16,13 @@
  */
 package de.flapdoodle.testdoc;
 
-import static org.junit.Assert.assertTrue;
-
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class HowToTest {
 
-	@ClassRule
+	@RegisterExtension
 	public static Recording recording=Recorder.with("howto.md", TabSize.spaces(2))
 		.sourceCodeOf("fooClass", FooClass.class);
 
@@ -34,7 +33,7 @@ public class HowToTest {
 		recording.begin();
 		
 		boolean sampleVar = true;
-		assertTrue(sampleVar);
+		Assertions.assertTrue(sampleVar);
 		
 		recording.end();
 		// nothing after this marker

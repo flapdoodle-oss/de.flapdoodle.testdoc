@@ -38,15 +38,16 @@ import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
+import org.junit.jupiter.api.extension.AfterAllCallback;
+import org.junit.jupiter.api.extension.AfterEachCallback;
+import org.junit.jupiter.api.extension.BeforeEachCallback;
 
 import de.flapdoodle.checks.Preconditions;
 import de.flapdoodle.testdoc.ImmutableReplacements.Builder;
 import de.flapdoodle.testdoc.Stacktraces.Scope;
+import org.junit.jupiter.api.extension.ExtensionContext;
 
-public class Recording implements TestRule {
+public class Recording implements AfterAllCallback {
 
 	private static final String DEST_DIR_PROPERTY = "de.flapdoodle.testdoc.destination";
 	private static final ThreadLocal<BiConsumer<String, String>> templateConsumer=new ThreadLocal<>();
@@ -89,23 +90,12 @@ public class Recording implements TestRule {
 		this.replacementNotFoundFallback = Optional.of(fallback);
 		return this;
 	}
-	
-	@Override
-	public Statement apply(Statement base, Description description) {
-		return new Statement() {
-			
-			@Override
-			public void evaluate() throws Throwable {
-//				System.out.println("before "+base+" -> "+description);
-				base.evaluate();
-//				System.out.println("after "+base+" -> "+description);
-				
-				String renderedTemplate = renderTemplate(templateName, templateContent, testSourceCode, lines, classes, resources, output, replacementNotFoundFallback);
-				writeResult(templateName, renderedTemplate);
-			}
-		};
+
+	@Override public void afterAll(ExtensionContext extensionContext) throws Exception {
+		String renderedTemplate = renderTemplate(templateName, templateContent, testSourceCode, lines, classes, resources, output, replacementNotFoundFallback);
+		writeResult(templateName, renderedTemplate);
 	}
-	
+
 	protected static void writeResult(String templateName, String renderedTemplate) {
 		if (templateConsumer.get()!=null) {
 			templateConsumer.get().accept(templateName, renderedTemplate);
