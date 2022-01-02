@@ -165,15 +165,15 @@
             </plugin>
 
             <plugin>
-                <groupId>com.mycila.maven-license-plugin</groupId>
-                <artifactId>maven-license-plugin</artifactId>
-                <version>1.9.0</version>
+                <groupId>com.mycila</groupId>
+                <artifactId>license-maven-plugin</artifactId>
+                <version>3.0</version>
                 <configuration>
                     <!-- <basedir>${basedir}</basedir> -->
                     <header>${basedir}/src/etc/header.txt</header>
-                    <!-- <validHeaders> <validHeader>/otherSupportedHeader.txt</validHeader>
-                        <validHeader>http://www.company.com/yetAnotherSupportedHeader.txt</validHeader>
-                        </validHeaders> -->
+                    <!-- <validHeaders> <validHeader>/otherSupportedHeader.txt</validHeader> 
+                    <validHeader>http://www.company.com/yetAnotherSupportedHeader.txt</validHeader> 
+                    </validHeaders> -->
                     <quiet>false</quiet>
                     <failIfMissing>true</failIfMissing>
                     <strictCheck>true</strictCheck>
