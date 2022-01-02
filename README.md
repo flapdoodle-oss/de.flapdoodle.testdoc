@@ -29,10 +29,10 @@ Snapshots (Repository http://oss.sonatype.org/content/repositories/snapshots)
 
 Use Recording as `ClassRule` like this:
 
-```
+```java
 public class HowToTest {
 
-  @ClassRule
+  @RegisterExtension
   public static Recording recording=Recorder.with("howto.md", TabSize.spaces(2))
     .sourceCodeOf("fooClass", FooClass.class);
 
@@ -63,6 +63,7 @@ public class HowToTest {
 
 .. and create MarkDown template as TestClass-Resource (same package):
 
+````markdown
 	# How To
 	
 	some text
@@ -105,9 +106,11 @@ public class HowToTest {
 	```
 	${theMethodNameIsTheKey.BarClass}
 	```
+````
 
 ... add a property in your `pom.xml` :
 
+```xml
 	<plugin>
 		<groupId>org.apache.maven.plugins</groupId>
 		<artifactId>maven-surefire-plugin</artifactId>
@@ -118,9 +121,11 @@ public class HowToTest {
 		  </systemPropertyVariables>
 		</configuration>
 	</plugin>
+```
 
 ... and you will get this:
 
+````markdown
 	# How To
 	
 	some text
@@ -193,3 +198,4 @@ public class HowToTest {
 	  Map<String, Object> map;
 	}
 	```
+````

@@ -16,9 +16,10 @@
  */
 package de.flapdoodle.testdoc;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HowToTest {
 
@@ -33,7 +34,7 @@ public class HowToTest {
 		recording.begin();
 		
 		boolean sampleVar = true;
-		Assertions.assertTrue(sampleVar);
+		assertTrue(sampleVar);
 		
 		recording.end();
 		// nothing after this marker
