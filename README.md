@@ -64,138 +64,138 @@ public class HowToTest {
 .. and create MarkDown template as TestClass-Resource (same package):
 
 ````markdown
-	# How To
-	
-	some text
-	
-	## Simple Sample 
-	
-	```
-	${theMethodNameIsTheKey}
-	```
-	
-	### .. with class include
-	
-	```
-	${theMethodNameIsTheKey.BarClass}
-	```
-	
-	
-	## Sample with more than one block
-	
-	```
-	${multipleCodeBlocks}
-	```
-	
-	## Sample with more than one block - alt version
-	
-	```
-	${multipleCodeBlocks.1}
-	```
-	
-	```
-	${multipleCodeBlocks.2}
-	```
-	
-	# Includes
-	
-	```
-	${fooClass}
-	```
-	
-	```
-	${theMethodNameIsTheKey.BarClass}
-	```
+# How To
+
+some text
+
+## Simple Sample 
+
+```
+${theMethodNameIsTheKey}
+```
+
+### .. with class include
+
+```
+${theMethodNameIsTheKey.BarClass}
+```
+
+
+## Sample with more than one block
+
+```
+${multipleCodeBlocks}
+```
+
+## Sample with more than one block - alt version
+
+```
+${multipleCodeBlocks.1}
+```
+
+```
+${multipleCodeBlocks.2}
+```
+
+# Includes
+
+```
+${fooClass}
+```
+
+```
+${theMethodNameIsTheKey.BarClass}
+```
 ````
 
 ... add a property in your `pom.xml` :
 
 ```xml
-	<plugin>
-		<groupId>org.apache.maven.plugins</groupId>
-		<artifactId>maven-surefire-plugin</artifactId>
-		<version>2.19.1</version>
-		<configuration>
-			<systemPropertyVariables>
-				<de.flapdoodle.testdoc.destination>${project.build.directory}</de.flapdoodle.testdoc.destination>
-		  </systemPropertyVariables>
-		</configuration>
-	</plugin>
+<plugin>
+	<groupId>org.apache.maven.plugins</groupId>
+	<artifactId>maven-surefire-plugin</artifactId>
+	<version>2.19.1</version>
+	<configuration>
+		<systemPropertyVariables>
+			<de.flapdoodle.testdoc.destination>${project.build.directory}</de.flapdoodle.testdoc.destination>
+	  </systemPropertyVariables>
+	</configuration>
+</plugin>
 ```
 
 ... and you will get this:
 
 ````markdown
-	# How To
-	
-	some text
-	
-	## Simple Sample 
-	
-	```
-	
-	boolean sampleVar = true;
-	assertTrue(sampleVar);
-	
-	```
-	
-	### .. with class include
-	
-	```
-	public class BarClass {
-	  Map<String, Object> map;
-	}
-	```
-	
-	
-	## Sample with more than one block
-	
-	```
-	// first block
-	...
-	
-	// second block
-	```
-	
-	## Sample with more than one block - alt version
-	
-	```
-	// first block
-	```
-	
-	```
-	// second block
-	```
-	
-	# Includes
-	
-	```
-	/**
-	 * Copyright (C) 2016
-	 *   Michael Mosmann <michael@mosmann.de>
-	 *
-	 * Licensed under the Apache License, Version 2.0 (the "License");
-	 * you may not use this file except in compliance with the License.
-	 * You may obtain a copy of the License at
-	 *
-	 *         http://www.apache.org/licenses/LICENSE-2.0
-	 *
-	 * Unless required by applicable law or agreed to in writing, software
-	 * distributed under the License is distributed on an "AS IS" BASIS,
-	 * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-	 * See the License for the specific language governing permissions and
-	 * limitations under the License.
-	 */
-	package de.flapdoodle.testdoc;
-	
-	public class FooClass {
-	  // nothing here
-	}
-	```
-	
-	```
-	public class BarClass {
-	  Map<String, Object> map;
-	}
-	```
+# How To
+
+some text
+
+## Simple Sample 
+
+```
+
+boolean sampleVar = true;
+assertTrue(sampleVar);
+
+```
+
+### .. with class include
+
+```
+public class BarClass {
+  Map<String, Object> map;
+}
+```
+
+
+## Sample with more than one block
+
+```
+// first block
+...
+
+// second block
+```
+
+## Sample with more than one block - alt version
+
+```
+// first block
+```
+
+```
+// second block
+```
+
+# Includes
+
+```
+/**
+ * Copyright (C) 2016
+ *   Michael Mosmann <michael@mosmann.de>
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package de.flapdoodle.testdoc;
+
+public class FooClass {
+  // nothing here
+}
+```
+
+```
+public class BarClass {
+  Map<String, Object> map;
+}
+```
 ````

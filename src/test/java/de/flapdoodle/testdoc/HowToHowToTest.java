@@ -39,13 +39,13 @@ public class HowToHowToTest {
 	@RegisterExtension
 	public static Recording recording=Recorder.with("howto-howto.md", TabSize.spaces(2))
 		.sourceCodeOf("howToTest", HowToTest.class, Includes.WithoutPackage, Includes.WithoutImports, Includes.Trim)
-		.resource("howToTest.md", HowToTest.class, "howto.md", ResourceFilter.indent("\t"))
+		.resource("howToTest.md", HowToTest.class, "howto.md"/*, ResourceFilter.indent("\t")*/)
 //		.replacementNotFoundFallback((key, keys) -> "${"+key+"->not found in "+keys+"}")
 		;
 
 	@Test
 	public void includeResources() {
-		recording.resource(getClass(), "howto-howto-pom.part", ResourceFilter.indent("\t"));
+		recording.resource(getClass(), "howto-howto-pom.part"/*, ResourceFilter.indent("\t")*/);
 	}
 	
 	@Test
@@ -93,7 +93,7 @@ public class HowToHowToTest {
 			}
 
 			TestExecutionSummary summary = listener.getSummary();
-			summary.printFailuresTo(new PrintWriter(System.out), 10);
+			//summary.printFailuresTo(new PrintWriter(System.out), 10);
 
 			assertEquals(0, summary.getFailures().size());
 			
@@ -102,6 +102,6 @@ public class HowToHowToTest {
 		// extract recorded content
 		String content = renderedOutput.get();
 		assertNotNull(content, "renderedTemplate");
-		recording.output("renderResult", ResourceFilter.indent("\t").apply(content));
+		recording.output("renderResult", content /*ResourceFilter.indent("\t").apply(content)*/);
 	}
 }
