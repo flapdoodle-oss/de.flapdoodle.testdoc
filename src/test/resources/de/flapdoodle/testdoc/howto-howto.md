@@ -1,6 +1,6 @@
 ### Usage
 
-Use Recording as `ClassRule` like this:
+Use Recording as `RegisterExtension` like this:
 
 ```java
 ${howToTest}

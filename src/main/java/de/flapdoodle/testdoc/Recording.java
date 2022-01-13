@@ -23,27 +23,18 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.extension.AfterAllCallback;
-import org.junit.jupiter.api.extension.AfterEachCallback;
-import org.junit.jupiter.api.extension.BeforeEachCallback;
 
 import de.flapdoodle.checks.Preconditions;
-import de.flapdoodle.testdoc.ImmutableReplacements.Builder;
 import de.flapdoodle.testdoc.Stacktraces.Scope;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
@@ -92,7 +83,16 @@ public class Recording implements AfterAllCallback {
 	}
 
 	@Override public void afterAll(ExtensionContext extensionContext) throws Exception {
-		String renderedTemplate = renderTemplate(templateName, templateContent, testSourceCode, lines, classes, resources, output, replacementNotFoundFallback);
+		String renderedTemplate = Renderer.renderTemplate(templateName, Recordings.builder()
+			.templateContent(templateContent)
+			.linesOfCode(testSourceCode)
+			.lines(lines)
+			.classes(classes)
+			.resources(resources)
+			.output(output)
+			.replacementNotFoundFallback(replacementNotFoundFallback)
+			.build());
+		
 		writeResult(templateName, renderedTemplate);
 	}
 
@@ -119,128 +119,6 @@ public class Recording implements AfterAllCallback {
 		}
 	}
 
-	protected static String renderTemplate(String templateName, String templateContent, List<String> linesOfCode, List<HasLine> lines, Map<String, String> classes, Map<String, String> resources, Map<String, String> output, Optional<BiFunction<String, Set<String>, String>> replacementNotFoundFallback) {
-		Map<String, List<HasLine>> usedFilenames = lines.stream()
-			.collect(Collectors.groupingBy((HasLine l) -> l.line().fileName()));
-		
-		Preconditions.checkArgument(usedFilenames.size()<=1, "more than one used filename: ",usedFilenames.keySet());
-		
-		Map<String, List<HasLine>> methodNames = lines.stream()
-			.collect(Collectors.groupingBy((HasLine l) -> l.line().methodName()));
-		
-		Map<String, List<String>> recordingsByMethod = recordingsByMethod(methodNames, linesOfCode);
-		
-		return render(templateContent, recordingsByMethod, classes, resources, output, replacementNotFoundFallback);
-	}
-
-	private static String render(String templateContent, Map<String, List<String>> recordingsByMethod, Map<String, String> classes, Map<String, String> resources, Map<String, String> output, Optional<BiFunction<String, Set<String>, String>> replacementNotFoundFallback) {
-		Map<String, String> joinedMap = merge(recordingsByMethod, classes, resources, output);
-		return replacementNotFoundFallback.isPresent() 
-				? Template.render(templateContent, joinedMap, replacementNotFoundFallback.get()) 
-				: Template.render(templateContent, joinedMap);
-	}
-
-	private static Map<String, String> merge(Map<String, List<String>> recordingsByMethod, Map<String, String> classes, Map<String, String> resources, Map<String, String> output) {
-		Set<String> usedKeys=new LinkedHashSet<>();
-		
-		Builder builder = Template.Replacements.builder();
-		recordingsByMethod.forEach((method, blocks) -> {
-			builder.putReplacement(method, formatBlocks(blocks));
-			usedKeys.add(method);
-			
-			AtomicInteger counter=new AtomicInteger(0);
-			for (String block : blocks) {
-				String blockLabel = method+"."+counter.incrementAndGet();
-				builder.putReplacement(blockLabel, block);
-				usedKeys.add(blockLabel);
-			}
-		});
-		
-		Function<String, BiConsumer<? super String, ? super String>> checkAndAddToBuilderFactory=scope -> (key, value) -> {
-			Preconditions.checkArgument(!usedKeys.contains(key), scope+": already set: %s",key);
-			builder.putReplacement(key, value);
-			usedKeys.add(key);
-		}; 
-		
-		classes.forEach(checkAndAddToBuilderFactory.apply("classes"));
-		resources.forEach(checkAndAddToBuilderFactory.apply("resources"));
-		output.forEach(checkAndAddToBuilderFactory.apply("output"));
-		return builder.build().replacement();
-	}
-	
-	private static String formatBlocks(List<String> blocks) {
-		return blocks.stream().collect(Collectors.joining("\n...\n\n"));
-	}
-
-	private static Map<String, List<String>> recordingsByMethod(Map<String, List<HasLine>> methodNames, List<String> linesOfCode) {
-		Map<String, List<String>> ret=new LinkedHashMap<>();
-		for (String key : methodNames.keySet()) {
-			ret.put(key, recordings(methodNames.get(key), linesOfCode));
-		}
-		return ret;
-	}
-
-	private static List<String> recordings(List<HasLine> list, List<String> linesOfCode) {
-		List<String> ret=new ArrayList<>();
-		
-		List<HasLine> sortedLineNumbers = list.stream()
-			.sorted((a,b) -> Integer.compare(a.line().lineNumber(),b.line().lineNumber()))
-			.collect(Collectors.toList());
-		
-//		System.out.println("sorted: "+sortedLineNumbers);
-		
-		Preconditions.checkArgument(sortedLineNumbers.size() % 2 == 0, "odd number of markers: %s", sortedLineNumbers);
-		
-		Start lastStart=null;
-		for (HasLine line : sortedLineNumbers) {
-			if (line instanceof Start) {
-				Preconditions.checkArgument(lastStart==null, "start after start: %s - %s",lastStart, line);
-				lastStart=(Start) line;
-			} else {
-				if (line instanceof End) {
-					Preconditions.checkNotNull(lastStart, "end but no start: %s", line);
-					ret.add(blockOf(linesOfCode, lastStart.line().lineNumber(), line.line().lineNumber()));
-					lastStart=null;
-				} else {
-					Preconditions.checkArgument(false, "hmm... should not happen: %s",line);
-				}
-			}
-		}
-		
-//		System.out.println("ret: "+ret);
-		
-		return ret;
-	}
-
-	private static String blockOf(List<String> linesOfCode, int startLineNumber, int endLineNumber) {
-		return shiftLeft(linesOfCode.subList(startLineNumber, endLineNumber-1))
-				.stream()
-				.collect(Collectors.joining("\n"));
-	}
-
-	private static Pattern WHITESPACES=Pattern.compile("\\s*");
-	
-	private static List<String> shiftLeft(List<String> subList) {
-//		System.out.println("shiftLeft: "+subList);
-		
-		Optional<Integer> minWhitespaces = subList.stream()
-			.filter(line -> !line.trim().isEmpty())
-			.map(line -> WHITESPACES.matcher(line))
-			.filter(matcher -> matcher.find())
-			.map(matcher -> matcher.end())
-			.min(Comparator.naturalOrder());
-		
-		if (minWhitespaces.isPresent()) {
-			int offset=minWhitespaces.get();
-			return subList.stream()
-					.map(line -> line.length()<offset ? "" : line.substring(offset))
-					.collect(Collectors.toList());
-		}
-		
-		
-		return subList;
-	}
-
 	public void include(Class<?> clazz, Includes ...includeOptions) {
 		Line currentLine = Stacktraces.currentLine(Scope.CallerOfCaller);
 		String label=currentLine.methodName()+"."+clazz.getSimpleName();
@@ -262,13 +140,11 @@ public class Recording implements AfterAllCallback {
 
 	public void begin() {
 		Line currentLine = Stacktraces.currentLine(Scope.CallerOfCaller);
-//		System.out.println("begin -> "+currentLine);
 		lines.add(Start.of(currentLine));
 	}
 	
 	public void end() {
 		Line currentLine = Stacktraces.currentLine(Scope.CallerOfCaller);
-//		System.out.println("end -> "+currentLine);
 		lines.add(End.of(currentLine));
 	}
 	

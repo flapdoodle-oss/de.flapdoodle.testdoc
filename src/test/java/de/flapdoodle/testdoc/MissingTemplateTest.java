@@ -16,16 +16,20 @@
  */
 package de.flapdoodle.testdoc;
 
-import org.immutables.value.Value.Immutable;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
-@Immutable
-public interface Line {
-	String className();
-	String fileName();
-	String methodName();
-	int lineNumber();
-	
-	static ImmutableLine.Builder builder() {
-		return ImmutableLine.builder();
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+public class MissingTemplateTest {
+
+	@RegisterExtension
+	public static Recording recording=Recorder.with("missingTemplate.md", TabSize.spaces(2));
+
+	@Test
+	public void firstTest() {
+		recording.begin();
+		// .. code in first test ..
+		recording.end();
 	}
 }
