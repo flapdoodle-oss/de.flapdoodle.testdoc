@@ -29,6 +29,9 @@ import org.junit.platform.launcher.listeners.TestExecutionSummary;
 
 import java.io.PrintWriter;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -49,19 +52,99 @@ public class HowToHowToTest {
 	}
 	
 	@Test
-//	@Ignore
 	public void runTest() {
+		recordTestRun(
+			"howtoOutput",
+			HowToTest.class,
+			() -> HowToTest.recording,
+			() -> Recorder.with(HowToTest.class,"howto.md", TabSize.spaces(2))
+					.sourceCodeOf("fooClass", FooClass.class),
+			r -> HowToTest.recording=r
+		);
+
+//		AtomicReference<String> renderedOutput=new AtomicReference<String>();
+//
+//		// redirect output for the following recording
+//		Recording.runWithTemplateConsumer((name, content) -> {
+//			renderedOutput.set(content);
+//		}).accept(() -> {
+//
+//			// run junit
+//			LauncherDiscoveryRequest request = LauncherDiscoveryRequestBuilder.request()
+//				.selectors(
+//					selectClass(HowToTest.class)
+//				)
+//				.build();
+//
+//			SummaryGeneratingListener listener = new SummaryGeneratingListener();
+//
+//			try (LauncherSession session = LauncherFactory.openSession()) {
+//				Launcher launcher = session.getLauncher();
+//				// Register a listener of your choice
+//				launcher.registerTestExecutionListeners(listener);
+//				// Discover tests and build a test plan
+//				TestPlan testPlan = launcher.discover(request);
+//
+//				// recover current recording instance from test class
+//				Recording oldRecording = HowToTest.recording;
+//
+//				// recreate static recording test instance
+//				HowToTest.recording=Recorder.with(HowToTest.class, "howto.md", TabSize.spaces(2))
+//					.sourceCodeOf("fooClass", FooClass.class);
+//
+//
+//				// Execute test plan
+//				launcher.execute(testPlan);
+////				// Alternatively, execute the request directly
+////				launcher.execute(request);
+//
+//
+//				// restore recording instance
+//				HowToTest.recording=oldRecording;
+//			}
+//
+//			TestExecutionSummary summary = listener.getSummary();
+//			//summary.printFailuresTo(new PrintWriter(System.out), 10);
+//
+//			assertEquals(0, summary.getFailures().size());
+//
+//		});
+//
+//		// extract recorded content
+//		String content = renderedOutput.get();
+//		assertNotNull(content, "renderedTemplate");
+//		recording.output("renderResult", content /*ResourceFilter.indent("\t").apply(content)*/);
+	}
+
+	@Test
+	public void runMissingTemplate() {
+		recordTestRun(
+			"missingTemplateOutput",
+			MissingTemplateTest.class,
+			() -> MissingTemplateTest.recording,
+			() -> Recorder.with(MissingTemplateTest.class,"missingTemplate.md", TabSize.spaces(2)),
+			r -> MissingTemplateTest.recording=r
+		);
+	}
+
+	static void recordTestRun(
+		String label,
+		Class<?> testClass,
+		Supplier<Recording> readRecording,
+		Supplier<Recording> recordingFactory,
+		Consumer<Recording> setRecording
+	) {
 		AtomicReference<String> renderedOutput=new AtomicReference<String>();
-		
+
 		// redirect output for the following recording
 		Recording.runWithTemplateConsumer((name, content) -> {
 			renderedOutput.set(content);
 		}).accept(() -> {
-			
+
 			// run junit
 			LauncherDiscoveryRequest request = LauncherDiscoveryRequestBuilder.request()
 				.selectors(
-					selectClass(HowToTest.class)
+					selectClass(testClass)
 				)
 				.build();
 
@@ -75,33 +158,31 @@ public class HowToHowToTest {
 				TestPlan testPlan = launcher.discover(request);
 
 				// recover current recording instance from test class
-				Recording oldRecording = HowToTest.recording;
+				Recording oldRecording = readRecording.get();
 
 				// recreate static recording test instance
-				HowToTest.recording=Recorder.with(HowToTest.class, "howto.md", TabSize.spaces(2))
-					.sourceCodeOf("fooClass", FooClass.class);
-
+				setRecording.accept(recordingFactory.get());
 
 				// Execute test plan
 				launcher.execute(testPlan);
 //				// Alternatively, execute the request directly
 //				launcher.execute(request);
 
-				
+
 				// restore recording instance
-				HowToTest.recording=oldRecording;
+				setRecording.accept(oldRecording);
 			}
 
 			TestExecutionSummary summary = listener.getSummary();
 			//summary.printFailuresTo(new PrintWriter(System.out), 10);
 
 			assertEquals(0, summary.getFailures().size());
-			
+
 		});
-		
+
 		// extract recorded content
 		String content = renderedOutput.get();
 		assertNotNull(content, "renderedTemplate");
-		recording.output("renderResult", content /*ResourceFilter.indent("\t").apply(content)*/);
+		recording.output(label, content /*ResourceFilter.indent("\t").apply(content)*/);
 	}
 }

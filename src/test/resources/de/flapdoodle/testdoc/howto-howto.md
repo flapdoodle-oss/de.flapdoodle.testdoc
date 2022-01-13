@@ -21,5 +21,11 @@ ${includeResources.HowToHowToTest:howto-howto-pom.part}
 ... and you will get this:
 
 ````markdown
-${runTest.renderResult}
+${recordTestRun.howtoOutput}
+````
+
+If you forgot to create the template, then this content will be rendered into the document:
+
+````markdown
+${recordTestRun.missingTemplateOutput}
 ````

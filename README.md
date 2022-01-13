@@ -199,3 +199,22 @@ public class BarClass {
 }
 ```
 ````
+
+If you forgot to create the template, then this content will be rendered into the document:
+
+````markdown
+# document from generated template
+
+as you did not create a matching template with the name `missingTemplate.md`
+in the same package as `class de.flapdoodle.testdoc.MissingTemplateTest`
+the content of this file is generated from the recordings of your test class.
+
+In your test following parts were recorded:
+
+* `firstTest`
+* `firstTest.1`
+
+to insert the content of a part into the generated document you must embed a name
+from this list between a starting `${` and `}`
+
+````
