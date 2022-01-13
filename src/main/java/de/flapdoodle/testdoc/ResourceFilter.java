@@ -22,9 +22,9 @@ import java.util.regex.Pattern;
 
 public interface ResourceFilter extends Function<String, String>{
 	
-	static final Pattern NEW_LINE= Pattern.compile("(?<newline>\\n\\r?)");
+	Pattern NEW_LINE= Pattern.compile("(?<newline>\\n\\r?)");
 
-	public static ResourceFilter join(ResourceFilter ...filters) {
+	static ResourceFilter join(ResourceFilter... filters) {
 		return src -> {
 			String ret=src;
 			for (ResourceFilter f : filters) {
@@ -34,7 +34,7 @@ public interface ResourceFilter extends Function<String, String>{
 		};
 	}
 	
-	public static ResourceFilter indent(String beforeEachLine) {
+	static ResourceFilter indent(String beforeEachLine) {
 		return src -> {
 			Matcher matcher = NEW_LINE.matcher(src);
 			int lastStart=0;

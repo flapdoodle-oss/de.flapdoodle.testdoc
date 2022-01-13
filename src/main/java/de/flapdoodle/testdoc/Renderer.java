@@ -13,7 +13,7 @@ public abstract class Renderer {
 
 	private static Pattern WHITESPACES=Pattern.compile("\\s*");
 
-	protected static String renderTemplate(String templateName, Recordings recordings) {
+	protected static String renderTemplate(Recordings recordings) {
 		Map<String, List<HasLine>> usedFilenames = recordings.lines().stream()
 			.collect(Collectors.groupingBy((HasLine l) -> l.line().fileName()));
 
@@ -29,11 +29,36 @@ public abstract class Renderer {
 
 	private static String render(Recordings recordings, Map<String, List<String>> recordingsByMethod) {
 		Map<String, String> joinedMap = merge(recordings, recordingsByMethod);
-		
+
+		String templateContent = recordings.templateReference().readContent()
+			.orElseGet(() -> templateFrom(recordings.templateReference(), joinedMap));
+
 		return recordings.replacementNotFoundFallback().isPresent()
-				? Template.render(recordings.templateContent(), joinedMap, recordings.replacementNotFoundFallback().get())
-				: Template.render(recordings.templateContent(), joinedMap);
+				? Template.render(templateContent, joinedMap, recordings.replacementNotFoundFallback().get())
+				: Template.render(templateContent, joinedMap);
 	}
+	private static String templateFrom(TemplateReference templateReference, Map<String, String> joinedMap) {
+		StringBuilder sb=new StringBuilder();
+		sb.append("# document from generated template\n\n");
+		sb.append("as you did not create a matching template with the name `")
+			.append(templateReference.templateName()).append("`\n")
+			.append("in the same package as `")
+			.append(templateReference.clazz().toString()).append("`\n")
+			.append("the content of this file is generated from the recordings of your test class.")
+			.append("\n\n")
+			.append("In your test following parts were recorded:\n\n");
+
+		joinedMap.forEach((key,value) -> {
+			sb.append("* `").append(key).append("`\n");
+		});
+
+		sb.append("\n")
+			.append("to insert the content of a part into the generated document you must embed a name\n")
+			.append("from this list between a starting `${` and `}`\n");
+		
+		return sb.toString();
+	}
+
 	private static Map<String, String> merge(Recordings recordings, Map<String, List<String>> recordingsByMethod) {
 		Set<String> usedKeys=new LinkedHashSet<>();
 

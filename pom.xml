@@ -430,7 +430,7 @@
         <dependency>
             <groupId>de.flapdoodle.java8</groupId>
             <artifactId>de.flapdoodle.java8</artifactId>
-            <version>1.0.1</version>
+            <version>1.1.1</version>
         </dependency>
     </dependencies>
 </project>

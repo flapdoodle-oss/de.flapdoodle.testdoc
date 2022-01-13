@@ -10,7 +10,7 @@ import java.util.function.BiFunction;
 
 @Value.Immutable
 public interface Recordings {
-	String templateContent();
+	TemplateReference templateReference();
 
 	List<String> linesOfCode();
 

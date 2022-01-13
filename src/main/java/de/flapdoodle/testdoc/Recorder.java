@@ -43,10 +43,6 @@ public class Recorder {
 	}
 
 	protected static Recording with(Class<?> clazz, String template, TabSize tabSize) {
-		return new Recording(template, templateOf(clazz, template), Resources.sourceCodeOf(clazz,  tabSize).get(), tabSize);
-	}
-	
-	private static String templateOf(Class<?> clazz, String template) {
-		return Resources.read(() -> Preconditions.checkNotNull(clazz.getResourceAsStream(template),"could not get %s for %s",template, clazz));
+		return new Recording(TemplateReference.of(clazz, template), Resources.sourceCodeOf(clazz,  tabSize).get(), tabSize);
 	}
 }
