@@ -65,7 +65,7 @@ public abstract class Template {
 	public interface Replacements {
 		Map<String, String> replacement();
 		
-		public static ImmutableReplacements.Builder builder() {
+		static ImmutableReplacements.Builder builder() {
 			return ImmutableReplacements.builder();
 		}
 	}

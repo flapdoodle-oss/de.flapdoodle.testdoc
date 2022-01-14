@@ -53,26 +53,16 @@ public abstract class Renderer {
 				? Template.render(templateContent, joinedMap, recordings.replacementNotFoundFallback().get())
 				: Template.render(templateContent, joinedMap);
 	}
+
 	private static String templateFrom(TemplateReference templateReference, Map<String, String> joinedMap) {
-		StringBuilder sb=new StringBuilder();
-		sb.append("# document from generated template\n\n");
-		sb.append("as you did not create a matching template with the name `")
-			.append(templateReference.templateName()).append("`\n")
-			.append("in the same package as `")
-			.append(templateReference.clazz().toString()).append("`\n")
-			.append("the content of this file is generated from the recordings of your test class.")
-			.append("\n\n")
-			.append("In your test following parts were recorded:\n\n");
-
-		joinedMap.forEach((key,value) -> {
-			sb.append("* `").append(key).append("`\n");
-		});
-
-		sb.append("\n")
-			.append("to insert the content of a part into the generated document you must embed a name\n")
-			.append("from this list between a starting `${` and `}`\n");
-		
-		return sb.toString();
+		String template = TemplateReference.readContent(Renderer.class, "template-is-missing-fallback.md");
+		return Template.render(template, Template.Replacements.builder()
+				.putReplacement("templateName", templateReference.templateName())
+				.putReplacement("templateClass", templateReference.clazz().getName())
+				.putReplacement("recordedParts", joinedMap.keySet().stream()
+					.map(key -> "* `"+key+"`")
+					.collect(Collectors.joining("\n")))
+			.build().replacement());
 	}
 
 	private static Map<String, String> merge(Recordings recordings, Map<String, List<String>> recordingsByMethod) {
