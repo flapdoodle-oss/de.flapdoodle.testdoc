@@ -16,6 +16,8 @@
  */
 package de.flapdoodle.testdoc;
 
+import de.flapdoodle.checks.Preconditions;
+import org.immutables.value.Value;
 import org.immutables.value.Value.Immutable;
 
 @Immutable
@@ -24,6 +26,16 @@ public interface Line {
 	String fileName();
 	String methodName();
 	int lineNumber();
+
+	@Value.Auxiliary
+	default int lineIndex() {
+		return lineNumber() - 1;
+	}
+
+	@Value.Check
+	default void check() {
+		Preconditions.checkArgument(lineNumber()>0,"invalid lineNumber: %s", lineNumber());
+	}
 	
 	static ImmutableLine.Builder builder() {
 		return ImmutableLine.builder();

@@ -43,6 +43,8 @@ public class HowToHowToTest {
 	public static Recording recording=Recorder.with("howto-howto.md", TabSize.spaces(2))
 		.sourceCodeOf("howToTest", HowToTest.class, Includes.WithoutPackage, Includes.WithoutImports, Includes.Trim)
 		.resource("howToTest.md", HowToTest.class, "howto.md"/*, ResourceFilter.indent("\t")*/)
+		.sourceCodeOf("methodSourceTest", MethodSourceTest.class, Includes.WithoutPackage, Includes.WithoutImports, Includes.Trim)
+		.resource("methodSourceTest.md", MethodSourceTest.class, "method-source.md"/*, ResourceFilter.indent("\t")*/)
 //		.replacementNotFoundFallback((key, keys) -> "${"+key+"->not found in "+keys+"}")
 		;
 
@@ -71,6 +73,17 @@ public class HowToHowToTest {
 			() -> MissingTemplateTest.recording,
 			() -> Recorder.with(MissingTemplateTest.class,"missingTemplate.md", TabSize.spaces(2)),
 			r -> MissingTemplateTest.recording=r
+		);
+	}
+
+	@Test
+	public void runMethodSource() {
+		recordTestRun(
+			"methodSourceOutput",
+			MethodSourceTest.class,
+			() -> MethodSourceTest.recording,
+			() -> Recorder.with(MethodSourceTest.class,"method-source.md", TabSize.spaces(2)),
+			r -> MethodSourceTest.recording=r
 		);
 	}
 

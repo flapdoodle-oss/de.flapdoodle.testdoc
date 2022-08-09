@@ -22,6 +22,7 @@ import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -40,6 +41,7 @@ public class Recording implements AfterAllCallback {
 	private final TemplateReference templateReference;
 	private final List<String> testSourceCode;
 	private final List<HasLine> lines = new ArrayList<>();
+	private final Map<String, CalledMethod> calledMethod = new LinkedHashMap<>();
 	private final Map<String, String> classes = new LinkedHashMap<>();
 	private final Map<String, String> resources = new LinkedHashMap<>();
 	private final Map<String, String> output = new LinkedHashMap<>();
@@ -60,6 +62,19 @@ public class Recording implements AfterAllCallback {
 		return this;
 	}
 
+	/**
+	 * use with care, it is not stable, it can happen that
+	 * the wrong fragment is used
+	 * @param label name for this segment
+	 */
+	@Deprecated
+	public Recording thisMethod(String label) {
+		Line currentLine = Stacktraces.currentLine(Scope.CallerOfCaller);
+		CalledMethod old = calledMethod.put(label, CalledMethod.of(currentLine));
+		Preconditions.checkArgument(old == null, "method with label %s was already set to %s", label, old);
+		return this;
+	}
+
 	public Recording resource(String label, Class<?> clazz, String resourceName, ResourceFilter... filters) {
 		Optional<String> resource = Resources.resource(clazz, resourceName);
 		Preconditions.checkArgument(resource.isPresent(), "could not find resource of %s:%s", clazz, resourceName);
@@ -74,11 +89,13 @@ public class Recording implements AfterAllCallback {
 		return this;
 	}
 
-	@Override public void afterAll(ExtensionContext extensionContext) throws Exception {
+	@Override
+	public void afterAll(ExtensionContext extensionContext) throws Exception {
 		String renderedTemplate = Renderer.renderTemplate(Recordings.builder()
 			.templateReference(templateReference)
 			.linesOfCode(testSourceCode)
 			.lines(lines)
+			.methodsCalled(calledMethod)
 			.classes(classes)
 			.resources(resources)
 			.output(output)
@@ -131,6 +148,7 @@ public class Recording implements AfterAllCallback {
 		String old = output.put(scopedLabel, content);
 		Preconditions.checkArgument(old == null, "%s already set to %s", label, old);
 	}
+
 
 	public void begin() {
 		Line currentLine = Stacktraces.currentLine(Scope.CallerOfCaller);

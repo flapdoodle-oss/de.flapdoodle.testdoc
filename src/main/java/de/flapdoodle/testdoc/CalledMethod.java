@@ -16,33 +16,16 @@
  */
 package de.flapdoodle.testdoc;
 
-import org.immutables.value.Value;
+import org.immutables.value.Value.Immutable;
+import org.immutables.value.Value.Parameter;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.function.BiFunction;
-
-@Value.Immutable
-public interface Recordings {
-	TemplateReference templateReference();
-
-	List<String> linesOfCode();
-
-	List<HasLine> lines();
-
-	Map<String, CalledMethod> methodsCalled();
-
-	Map<String, String> classes();
-
-	Map<String, String> resources();
-
-	Map<String, String> output();
-
-	Optional<BiFunction<String, Set<String>, String>> replacementNotFoundFallback();
-
-	static ImmutableRecordings.Builder builder() {
-		return ImmutableRecordings.builder();
+@Immutable
+public interface CalledMethod extends HasLine {
+	@Override
+	@Parameter
+	Line line();
+	
+	static ImmutableCalledMethod of(Line line) {
+		return ImmutableCalledMethod.of(line);
 	}
 }

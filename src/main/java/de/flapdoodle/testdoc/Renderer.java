@@ -90,11 +90,68 @@ public abstract class Renderer {
 		recordings.classes().forEach(checkAndAddToBuilderFactory.apply("classes"));
 		recordings.resources().forEach(checkAndAddToBuilderFactory.apply("resources"));
 		recordings.output().forEach(checkAndAddToBuilderFactory.apply("output"));
+		recordings.methodsCalled().forEach((label, calledMethod) -> {
+			String methodCode = findSurroundingMethodOf(recordings.linesOfCode(), calledMethod);
+			builder.putReplacement(label, methodCode);
+		});
 		return builder.build().replacement();
 	}
+
+	private static final String CLOSING_BRACE_REGEX="\\s*}\\s*";
+
+	private static String findSurroundingMethodOf(List<String> linesOfCode, CalledMethod calledMethod) {
+		int lineIndex = calledMethod.line().lineIndex();
+
+		Preconditions.checkArgument(lineIndex <= linesOfCode.size(),"line number(%s) > lines of code(%s)", lineIndex, linesOfCode.size());
+		System.out.println(linesOfCode.size()+" ? "+ lineIndex);
+		System.out.println(linesOfCode.get(lineIndex - 1));
+
+		int start=-1;
+		int end=-1;
+
+		for (int i=lineIndex-1; i>=0;i--) {
+			String line = linesOfCode.get(i);
+			if (line.contains(calledMethod.line().methodName())) {
+				System.out.println("found "+line+" at "+i);
+				start=i;
+				break;
+			}
+		}
+		Preconditions.checkArgument(start!=-1,"could not find method declaration for "+calledMethod.line().methodName());
+
+		for (int i=lineIndex;i<linesOfCode.size();i++) {
+			String lastLine = i >0 ? linesOfCode.get(i-1) : "{}";
+			String line = linesOfCode.get(i);
+
+			if (line.trim().isEmpty() && i>lineIndex) {
+				if (lastLine.matches(CLOSING_BRACE_REGEX)) {
+					System.out.println("found "+line+" at "+i);
+					end = i;
+					break;
+				}
+			} else {
+				if (i+1==linesOfCode.size()) {
+					if (line.matches(CLOSING_BRACE_REGEX) && lastLine.matches(CLOSING_BRACE_REGEX)) {
+						System.out.println("found EOF '"+line+"' at "+i);
+						end = i;
+					}
+				}
+			}
+		}
+
+		Preconditions.checkArgument(end!=-1,"could not find end of method declaration for "+calledMethod.line().methodName());
+
+		List<String> lines = new ArrayList<>();
+		lines.addAll(linesOfCode.subList(start, lineIndex));
+		lines.addAll(linesOfCode.subList(lineIndex+1,end+1));
+		
+		return blockOf(lines, 0, lines.size());
+	}
+
 	private static String formatBlocks(List<String> blocks) {
 		return blocks.stream().collect(Collectors.joining("\n...\n\n"));
 	}
+
 	private static Map<String, List<String>> recordingsByMethod(Map<String, List<HasLine>> methodNames, List<String> linesOfCode) {
 		Map<String, List<String>> ret=new LinkedHashMap<>();
 		for (String key : methodNames.keySet()) {
@@ -102,14 +159,13 @@ public abstract class Renderer {
 		}
 		return ret;
 	}
+
 	private static List<String> recordings(List<HasLine> list, List<String> linesOfCode) {
 		List<String> ret=new ArrayList<>();
 
 		List<HasLine> sortedLineNumbers = list.stream()
-			.sorted((a,b) -> Integer.compare(a.line().lineNumber(),b.line().lineNumber()))
+			.sorted(Comparator.comparingInt(a -> a.line().lineNumber()))
 			.collect(Collectors.toList());
-
-//		System.out.println("sorted: "+sortedLineNumbers);
 
 		Preconditions.checkArgument(sortedLineNumbers.size() % 2 == 0, "odd number of markers: %s", sortedLineNumbers);
 
@@ -129,15 +185,15 @@ public abstract class Renderer {
 			}
 		}
 
-//		System.out.println("ret: "+ret);
-
 		return ret;
 	}
+
 	private static String blockOf(List<String> linesOfCode, int startLineNumber, int endLineNumber) {
 		return shiftLeft(linesOfCode.subList(startLineNumber, endLineNumber-1))
 				.stream()
 				.collect(Collectors.joining("\n"));
 	}
+
 	private static List<String> shiftLeft(List<String> subList) {
 //		System.out.println("shiftLeft: "+subList);
 
