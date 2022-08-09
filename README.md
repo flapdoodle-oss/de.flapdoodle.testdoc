@@ -200,6 +200,70 @@ public class BarClass {
 ```
 ````
 
+#### Method Called
+
+.. to add a method called inside test class you can
+
+```java
+public class MethodSourceTest {
+
+  @RegisterExtension
+  public static Recording recording=Recorder.with("method-source.md", TabSize.spaces(2));
+
+  @Test
+  public void testMethod() {
+    recording.begin();
+    otherMethod();
+    recording.end();
+  }
+
+  public void otherMethod() {
+    recording.thisMethod("otherMethod");
+    // you should include this
+
+    // and this
+  }
+}
+```
+
+.. and create MarkDown template as TestClass-Resource (same package):
+
+````markdown
+# include method source code
+
+```java
+${testMethod}
+```
+
+calls:
+
+```java
+${otherMethod}
+```
+````
+... and you will get this:
+
+````markdown
+# include method source code
+
+```java
+otherMethod();
+```
+
+calls:
+
+```java
+public void otherMethod() {
+  // you should include this
+
+  // and this
+}
+```
+````
+
+
+#### Without Template
+
 If you forgot to create the template, then this content will be rendered into the document:
 
 ````markdown
