@@ -9,12 +9,12 @@ simple doc generator based on unit tests
 
 ### Maven
 
-Stable (Maven Central Repository, Released: 09.08.2022 - wait 24hrs for [maven central](http://repo1.maven.org/maven2/de/flapdoodle/guava/de.flapdoodle.testdoc/maven-metadata.xml))
+Stable (Maven Central Repository, Released: 18.08.2022 - wait 24hrs for [maven central](http://repo1.maven.org/maven2/de/flapdoodle/guava/de.flapdoodle.testdoc/maven-metadata.xml))
 
 	<dependency>
 		<groupId>de.flapdoodle.testdoc</groupId>
 		<artifactId>de.flapdoodle.testdoc</artifactId>
-		<version>1.3.2</version>
+		<version>1.3.3</version>
 	</dependency>
 
 Snapshots (Repository http://oss.sonatype.org/content/repositories/snapshots)
@@ -22,7 +22,7 @@ Snapshots (Repository http://oss.sonatype.org/content/repositories/snapshots)
 	<dependency>
 		<groupId>de.flapdoodle.testdoc</groupId>
 		<artifactId>de.flapdoodle.testdoc</artifactId>
-		<version>1.3.3-SNAPSHOT</version>
+		<version>1.3.4-SNAPSHOT</version>
 	</dependency>
 
 ### Usage
@@ -54,8 +54,8 @@ public class HowToTest {
     recording.begin();
     // first block
     recording.end();
-    recording.begin();
-    // second block
+    recording.begin("named");
+    // second block - named
     recording.end();
   }
 }
@@ -95,6 +95,10 @@ ${multipleCodeBlocks.1}
 
 ```
 ${multipleCodeBlocks.2}
+```
+
+```
+${multipleCodeBlocks.named}
 ```
 
 # Includes
@@ -154,7 +158,7 @@ public class BarClass {
 // first block
 ...
 
-// second block
+// second block - named
 ```
 
 ## Sample with more than one block - alt version
@@ -164,7 +168,11 @@ public class BarClass {
 ```
 
 ```
-// second block
+// second block - named
+```
+
+```
+// second block - named
 ```
 
 # Includes
