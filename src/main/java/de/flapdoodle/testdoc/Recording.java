@@ -155,6 +155,11 @@ public class Recording implements AfterAllCallback {
 		lines.add(Start.of(currentLine));
 	}
 
+	public void begin(String label) {
+		Line currentLine = Stacktraces.currentLine(Scope.CallerOfCaller);
+		lines.add(Start.of(label, currentLine));
+	}
+
 	public void end() {
 		Line currentLine = Stacktraces.currentLine(Scope.CallerOfCaller);
 		lines.add(End.of(currentLine));

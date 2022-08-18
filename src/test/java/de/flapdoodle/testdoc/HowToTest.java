@@ -45,8 +45,8 @@ public class HowToTest {
 		recording.begin();
 		// first block
 		recording.end();
-		recording.begin();
-		// second block
+		recording.begin("named");
+		// second block - named
 		recording.end();
 	}
 }

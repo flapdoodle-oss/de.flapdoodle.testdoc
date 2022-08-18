@@ -38,12 +38,12 @@ public abstract class Renderer {
 		Map<String, List<HasLine>> methodNames = recordings.lines().stream()
 			.collect(Collectors.groupingBy((HasLine l) -> l.line().methodName()));
 
-		Map<String, List<String>> recordingsByMethod = recordingsByMethod(methodNames, recordings.linesOfCode());
+		Map<String, List<Block>> recordingsByMethod = recordingsByMethod(methodNames, recordings.linesOfCode());
 
 		return render(recordings, recordingsByMethod);
 	}
 
-	private static String render(Recordings recordings, Map<String, List<String>> recordingsByMethod) {
+	private static String render(Recordings recordings, Map<String, List<Block>> recordingsByMethod) {
 		Map<String, String> joinedMap = merge(recordings, recordingsByMethod);
 
 		String templateContent = recordings.templateReference().readContent()
@@ -65,7 +65,7 @@ public abstract class Renderer {
 			.build().replacement());
 	}
 
-	private static Map<String, String> merge(Recordings recordings, Map<String, List<String>> recordingsByMethod) {
+	private static Map<String, String> merge(Recordings recordings, Map<String, List<Block>> recordingsByMethod) {
 		Set<String> usedKeys=new LinkedHashSet<>();
 
 		ImmutableReplacements.Builder builder = Template.Replacements.builder();
@@ -74,10 +74,16 @@ public abstract class Renderer {
 			usedKeys.add(method);
 
 			AtomicInteger counter=new AtomicInteger(0);
-			for (String block : blocks) {
+			for (Block block : blocks) {
 				String blockLabel = method+"."+counter.incrementAndGet();
-				builder.putReplacement(blockLabel, block);
+				builder.putReplacement(blockLabel, block.content);
 				usedKeys.add(blockLabel);
+
+				if (block.label.isPresent()) {
+					String secondBlockLabel = method + "." + block.label.get();
+					builder.putReplacement(secondBlockLabel, block.content);
+					usedKeys.add(secondBlockLabel);
+				}
 			}
 		});
 
@@ -103,8 +109,8 @@ public abstract class Renderer {
 		int lineIndex = calledMethod.line().lineIndex();
 
 		Preconditions.checkArgument(lineIndex <= linesOfCode.size(),"line number(%s) > lines of code(%s)", lineIndex, linesOfCode.size());
-		System.out.println(linesOfCode.size()+" ? "+ lineIndex);
-		System.out.println(linesOfCode.get(lineIndex - 1));
+//		System.out.println(linesOfCode.size()+" ? "+ lineIndex);
+//		System.out.println(linesOfCode.get(lineIndex - 1));
 
 		int start=-1;
 		int end=-1;
@@ -112,7 +118,7 @@ public abstract class Renderer {
 		for (int i=lineIndex-1; i>=0;i--) {
 			String line = linesOfCode.get(i);
 			if (line.contains(calledMethod.line().methodName())) {
-				System.out.println("found "+line+" at "+i);
+//				System.out.println("found "+line+" at "+i);
 				start=i;
 				break;
 			}
@@ -125,14 +131,14 @@ public abstract class Renderer {
 
 			if (line.trim().isEmpty() && i>lineIndex) {
 				if (lastLine.matches(CLOSING_BRACE_REGEX)) {
-					System.out.println("found "+line+" at "+i);
+//					System.out.println("found "+line+" at "+i);
 					end = i;
 					break;
 				}
 			} else {
 				if (i+1==linesOfCode.size()) {
 					if (line.matches(CLOSING_BRACE_REGEX) && lastLine.matches(CLOSING_BRACE_REGEX)) {
-						System.out.println("found EOF '"+line+"' at "+i);
+//						System.out.println("found EOF '"+line+"' at "+i);
 						end = i;
 					}
 				}
@@ -148,20 +154,20 @@ public abstract class Renderer {
 		return blockOf(lines, 0, lines.size());
 	}
 
-	private static String formatBlocks(List<String> blocks) {
-		return blocks.stream().collect(Collectors.joining("\n...\n\n"));
+	private static String formatBlocks(List<Block> blocks) {
+		return blocks.stream().map(block -> block.content).collect(Collectors.joining("\n...\n\n"));
 	}
 
-	private static Map<String, List<String>> recordingsByMethod(Map<String, List<HasLine>> methodNames, List<String> linesOfCode) {
-		Map<String, List<String>> ret=new LinkedHashMap<>();
+	private static Map<String, List<Block>> recordingsByMethod(Map<String, List<HasLine>> methodNames, List<String> linesOfCode) {
+		Map<String, List<Block>> ret=new LinkedHashMap<>();
 		for (String key : methodNames.keySet()) {
 			ret.put(key, recordings(methodNames.get(key), linesOfCode));
 		}
 		return ret;
 	}
 
-	private static List<String> recordings(List<HasLine> list, List<String> linesOfCode) {
-		List<String> ret=new ArrayList<>();
+	private static List<Block> recordings(List<HasLine> list, List<String> linesOfCode) {
+		List<Block> ret=new ArrayList<>();
 
 		List<HasLine> sortedLineNumbers = list.stream()
 			.sorted(Comparator.comparingInt(a -> a.line().lineNumber()))
@@ -177,7 +183,10 @@ public abstract class Renderer {
 			} else {
 				if (line instanceof End) {
 					Preconditions.checkNotNull(lastStart, "end but no start: %s", line);
-					ret.add(blockOf(linesOfCode, lastStart.line().lineNumber(), line.line().lineNumber()));
+					ret.add(new Block(
+						blockOf(linesOfCode, lastStart.line().lineNumber(), line.line().lineNumber()),
+						lastStart.label()
+					));
 					lastStart=null;
 				} else {
 					Preconditions.checkArgument(false, "hmm... should not happen: %s",line);
@@ -213,5 +222,15 @@ public abstract class Renderer {
 
 
 		return subList;
+	}
+
+	private static class Block {
+		final String content;
+		final Optional<String> label;
+
+		Block(String content, Optional<String> label) {
+			this.content = content;
+			this.label = label;
+		}
 	}
 }

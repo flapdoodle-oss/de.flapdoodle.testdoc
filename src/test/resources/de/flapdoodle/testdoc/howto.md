@@ -31,6 +31,10 @@ ${multipleCodeBlocks.1}
 ${multipleCodeBlocks.2}
 ```
 
+```
+${multipleCodeBlocks.named}
+```
+
 # Includes
 
 ```

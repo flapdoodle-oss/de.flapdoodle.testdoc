@@ -19,13 +19,21 @@ package de.flapdoodle.testdoc;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 
+import java.util.Optional;
+
 @Immutable
 public interface Start extends HasLine {
 	@Override
 	@Parameter
 	Line line();
-	
-	public static ImmutableStart of(Line line) {
+
+	Optional<String> label();
+
+	static ImmutableStart of(Line line) {
 		return ImmutableStart.of(line);
+	}
+
+	static ImmutableStart of(String label, Line line) {
+		return of(line).withLabel(label);
 	}
 }
