@@ -17,58 +17,86 @@
 package de.flapdoodle.testdoc;
 
 
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.Function;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class TemplateTest {
 
 	@Test
 	public void noPlaceHolderNoReplacement() {
-		String result = Template.render("foo", var -> "NOOP");
+		String result = render("foo", var -> "NOOP");
 		assertEquals("foo", result);
 	}
 	
 	@Test
 	public void placeHolderFullReplacement() {
-		String result = Template.render("${foo}", var -> "NOOP");
+		String result = render("${foo}", var -> "NOOP");
 		assertEquals("NOOP", result);
 	}
 	
 	@Test
 	public void placeHolderStartReplacement() {
-		String result = Template.render("${foo}BAR", var -> "NOOP");
+		String result = render("${foo}BAR", var -> "NOOP");
 		assertEquals("NOOPBAR", result);
 	}
 	
 	@Test
 	public void placeHolderEndReplacement() {
-		String result = Template.render("BAR${foo}", var -> "NOOP");
+		String result = render("BAR${foo}", var -> "NOOP");
 		assertEquals("BARNOOP", result);
 	}
 	
 	@Test
 	public void doubleReplacement() {
-		String result = Template.render("${foo}${bar}", var -> "["+var+"]");
+		String result = render("${foo}${bar}", var -> "["+var+"]");
 		assertEquals("[foo][bar]", result);
 	}
 	
 	@Test
 	public void multipleReplacementsWithSpace() {
-		String result = Template.render("space${foo} ${bar} and more", var -> "["+var+"]");
+		String result = render("space${foo} ${bar} and more", var -> "["+var+"]");
 		assertEquals("space[foo] [bar] and more", result);
 	}
-	
+
+	@Test
+	public void multipleReplacementsWithSpaceWorksWithAllPatterns() {
+		for (ReplacementPattern replacementPattern : ReplacementPattern.values()) {
+			String templateContent = "space"+asVariable("foo", replacementPattern)+" "+asVariable("bar", replacementPattern)+" and more";
+			String result = Template.render(Template.of(templateContent, replacementPattern), var -> "[" + var + "]");
+			assertThat(result)
+				.describedAs("rendered with replacementPattern %s", replacementPattern)
+				.isEqualTo("space[foo] [bar] and more");
+		}
+	}
+
+	private static String asVariable(String name, ReplacementPattern replacementPattern) {
+		switch (replacementPattern) {
+			case DEFAULT: return "${"+name+"}";
+			case DOUBLE_CURLY: return "{{"+name+"}}";
+			default:
+				throw new IllegalArgumentException("not implemented: "+replacementPattern);
+		}
+	}
+
 	@Test
 	public void mapReplacementsWithCrazyName() {
 		String key = "abc091.-:_2123ya23";
 		Map<String, String> map=new LinkedHashMap<>();
 		map.put(key, "DONE");
 		
-		String result = Template.render(">>${" + key + "}<<", map);
+		String result = Template.render(Template.of( ">>${" + key + "}<<"), map);
 		assertEquals(">>DONE<<", result);
+	}
+
+	private static String render(String source, Function<String, String> variableLookUp) {
+		return Template.render(Template.of(source), variableLookUp);
 	}
 }

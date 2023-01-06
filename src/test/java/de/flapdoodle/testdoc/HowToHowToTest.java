@@ -43,6 +43,8 @@ public class HowToHowToTest {
 	public static Recording recording=Recorder.with("howto-howto.md", TabSize.spaces(2))
 		.sourceCodeOf("howToTest", HowToTest.class, Includes.WithoutPackage, Includes.WithoutImports, Includes.Trim)
 		.resource("howToTest.md", HowToTest.class, "howto.md"/*, ResourceFilter.indent("\t")*/)
+		.sourceCodeOf("howToDoubleCurlyTest", HowToDifferentReplacementPatternTest.class, Includes.WithoutPackage, Includes.WithoutImports, Includes.Trim)
+		.resource("howToDoubleCurlyTest.md", HowToDifferentReplacementPatternTest.class, "howtoDoubleCurly.md"/*, ResourceFilter.indent("\t")*/)
 		.sourceCodeOf("methodSourceTest", MethodSourceTest.class, Includes.WithoutPackage, Includes.WithoutImports, Includes.Trim)
 		.resource("methodSourceTest.md", MethodSourceTest.class, "method-source.md"/*, ResourceFilter.indent("\t")*/)
 //		.replacementNotFoundFallback((key, keys) -> "${"+key+"->not found in "+keys+"}")
@@ -52,7 +54,7 @@ public class HowToHowToTest {
 	public void includeResources() {
 		recording.resource(getClass(), "howto-howto-pom.part"/*, ResourceFilter.indent("\t")*/);
 	}
-	
+
 	@Test
 	public void runTest() {
 		recordTestRun(
@@ -60,8 +62,20 @@ public class HowToHowToTest {
 			HowToTest.class,
 			() -> HowToTest.recording,
 			() -> Recorder.with(HowToTest.class,"howto.md", TabSize.spaces(2))
-					.sourceCodeOf("fooClass", FooClass.class),
+				.sourceCodeOf("fooClass", FooClass.class),
 			r -> HowToTest.recording=r
+		);
+	}
+
+	@Test
+	public void runTestDoubleCurly() {
+		recordTestRun(
+			"howtoDoubleCurlyOutput",
+			HowToDifferentReplacementPatternTest.class,
+			() -> HowToDifferentReplacementPatternTest.recording,
+			() -> Recorder.with(HowToDifferentReplacementPatternTest.class,"howtoDoubleCurly.md", ReplacementPattern.DOUBLE_CURLY, TabSize.spaces(2))
+				.sourceCodeOf("fooClass", FooClass.class),
+			r -> HowToDifferentReplacementPatternTest.recording=r
 		);
 	}
 

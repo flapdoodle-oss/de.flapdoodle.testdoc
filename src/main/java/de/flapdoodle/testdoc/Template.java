@@ -16,29 +16,43 @@
  */
 package de.flapdoodle.testdoc;
 
-import java.util.LinkedHashMap;
+import de.flapdoodle.checks.Preconditions;
+import org.immutables.value.Value;
+
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-import org.immutables.value.Value;
-
-import de.flapdoodle.checks.Preconditions;
-
+@Value.Immutable
 public abstract class Template {
 
-	private static Pattern VAR_PATTERN=Pattern.compile("(?<all>\\$\\{(?<label>[a-zA-Z0-9\\-_:\\.]+)\\})");
+	public abstract String source();
 	
-	public static String render(String template, Map<String, String> replacements) {
-		return render(template, key -> {
-			return Preconditions.checkNotNull(replacements.get(key),"could not resolve %s in %s",key, replacements.keySet());
-		});
+	@Value.Default
+	public ReplacementPattern pattern() {
+		return ReplacementPattern.DEFAULT;
 	}
-	
-	public static String render(String template, Map<String, String> replacements, BiFunction<String, Set<String>, String> fallback) {
+
+	public static Template of(String source) {
+		return ImmutableTemplate.builder()
+			.source(source)
+			.build();
+	}
+
+	public static Template of(String source, ReplacementPattern pattern) {
+		return ImmutableTemplate.builder()
+			.source(source)
+			.pattern(pattern)
+			.build();
+	}
+
+	public static String render(Template template, Map<String, String> replacements) {
+		return render(template, key -> Preconditions.checkNotNull(replacements.get(key),"could not resolve %s in %s",key, replacements.keySet()));
+	}
+
+	public static String render(Template template, Map<String, String> replacements, BiFunction<String, Set<String>, String> fallback) {
 		return render(template, key -> {
 			String replacement = replacements.get(key);
 			if (replacement==null) {
@@ -47,26 +61,19 @@ public abstract class Template {
 			return replacement;
 		});
 	}
-	
-	public static String render(String template, Function<String, String> variableLookUp) {
+
+	public static String render(Template template, Function<String, String> variableLookUp) {
 		StringBuilder sb=new StringBuilder();
-		Matcher matcher = VAR_PATTERN.matcher(template);
+		String source = template.source();
+
+		Matcher matcher = template.pattern().matcher(source);
 		int lastEnd=0;
 		while (matcher.find()) {
-			sb.append(template.substring(lastEnd, matcher.start()));
+			sb.append(source, lastEnd, matcher.start());
 			sb.append(variableLookUp.apply(matcher.group("label")));
 			lastEnd=matcher.end();
 		}
-		sb.append(template.substring(lastEnd));
+		sb.append(source.substring(lastEnd));
 		return sb.toString();
-	}
-	
-	@Value.Immutable
-	public interface Replacements {
-		Map<String, String> replacement();
-		
-		static ImmutableReplacements.Builder builder() {
-			return ImmutableReplacements.builder();
-		}
 	}
 }

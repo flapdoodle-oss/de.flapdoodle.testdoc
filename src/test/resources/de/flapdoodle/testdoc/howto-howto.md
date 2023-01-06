@@ -24,6 +24,26 @@ ${includeResources.HowToHowToTest:howto-howto-pom.part}
 ${recordTestRun.howtoOutput}
 ````
 
+#### Different Replacement Pattern                            
+
+With different replacement pattern as in:                                          
+
+```java
+${howToDoubleCurlyTest}
+```
+
+.. and a differnt template as TestClass-Resource (same package):
+
+````markdown
+${howToDoubleCurlyTest.md}
+````
+
+... and you will get this:
+
+````markdown
+${recordTestRun.howtoDoubleCurlyOutput}
+````
+
 #### Method Called
 
 .. to add a method called inside test class you can

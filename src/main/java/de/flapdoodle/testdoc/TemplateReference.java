@@ -27,6 +27,10 @@ public interface TemplateReference {
 	Class<?> clazz();
 	@Value.Parameter
 	String templateName();
+	@Value.Default
+	default ReplacementPattern replacementPattern() {
+		return ReplacementPattern.DEFAULT;
+	}
 
 	@Value.Lazy
 	default Optional<String> readContent() {
@@ -39,6 +43,11 @@ public interface TemplateReference {
 
 	static TemplateReference of(Class<?> clazz, String templateName) {
 		return ImmutableTemplateReference.of(clazz, templateName);
+	}
+
+	static TemplateReference of(Class<?> clazz, String templateName, ReplacementPattern replacementPattern) {
+		return ImmutableTemplateReference.of(clazz, templateName)
+			.withReplacementPattern(replacementPattern);
 	}
 
 	static String readContent(Class<?> clazz, String template) {

@@ -48,15 +48,16 @@ public abstract class Renderer {
 
 		String templateContent = recordings.templateReference().readContent()
 			.orElseGet(() -> templateFrom(recordings.templateReference(), joinedMap));
-
+		ReplacementPattern replacementPattern = recordings.templateReference().replacementPattern();
+		
 		return recordings.replacementNotFoundFallback().isPresent()
-				? Template.render(templateContent, joinedMap, recordings.replacementNotFoundFallback().get())
-				: Template.render(templateContent, joinedMap);
+				? Template.render(Template.of(templateContent, replacementPattern), joinedMap, recordings.replacementNotFoundFallback().get())
+				: Template.render(Template.of(templateContent, replacementPattern), joinedMap);
 	}
 
 	private static String templateFrom(TemplateReference templateReference, Map<String, String> joinedMap) {
-		String template = TemplateReference.readContent(Renderer.class, "template-is-missing-fallback.md");
-		return Template.render(template, Template.Replacements.builder()
+		String source = TemplateReference.readContent(Renderer.class, "template-is-missing-fallback.md");
+		return Template.render(Template.of(source), Replacements.builder()
 				.putReplacement("templateName", templateReference.templateName())
 				.putReplacement("templateClass", templateReference.clazz().getName())
 				.putReplacement("recordedParts", joinedMap.keySet().stream()
@@ -68,7 +69,7 @@ public abstract class Renderer {
 	private static Map<String, String> merge(Recordings recordings, Map<String, List<Block>> recordingsByMethod) {
 		Set<String> usedKeys=new LinkedHashSet<>();
 
-		ImmutableReplacements.Builder builder = Template.Replacements.builder();
+		ImmutableReplacements.Builder builder = Replacements.builder();
 		recordingsByMethod.forEach((method, blocks) -> {
 			builder.putReplacement(method, formatBlocks(blocks));
 			usedKeys.add(method);
