@@ -9,20 +9,12 @@ simple doc generator based on unit tests
 
 ### Maven
 
-Stable (Maven Central Repository, Released: 18.08.2022 - wait 24hrs for [maven central](http://repo1.maven.org/maven2/de/flapdoodle/guava/de.flapdoodle.testdoc/maven-metadata.xml))
+Stable (Maven Central Repository, Released: 06.01.2023 - wait 24hrs for [maven central](http://repo1.maven.org/maven2/de/flapdoodle/guava/de.flapdoodle.testdoc/maven-metadata.xml))
 
 	<dependency>
 		<groupId>de.flapdoodle.testdoc</groupId>
 		<artifactId>de.flapdoodle.testdoc</artifactId>
-		<version>1.3.3</version>
-	</dependency>
-
-Snapshots (Repository http://oss.sonatype.org/content/repositories/snapshots)
-
-	<dependency>
-		<groupId>de.flapdoodle.testdoc</groupId>
-		<artifactId>de.flapdoodle.testdoc</artifactId>
-		<version>1.3.4-SNAPSHOT</version>
+		<version>1.5.0</version>
 	</dependency>
 
 ### Usage
@@ -126,6 +118,174 @@ ${theMethodNameIsTheKey.BarClass}
 	</configuration>
 </plugin>
 ```
+
+... and you will get this:
+
+````markdown
+# How To
+
+some text
+
+## Simple Sample 
+
+```
+
+boolean sampleVar = true;
+assertTrue(sampleVar);
+
+```
+
+### .. with class include
+
+```
+public class BarClass {
+  Map<String, Object> map;
+}
+```
+
+
+## Sample with more than one block
+
+```
+// first block
+...
+
+// second block - named
+```
+
+## Sample with more than one block - alt version
+
+```
+// first block
+```
+
+```
+// second block - named
+```
+
+```
+// second block - named
+```
+
+# Includes
+
+```
+/**
+ * Copyright (C) 2016
+ *   Michael Mosmann <michael@mosmann.de>
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package de.flapdoodle.testdoc;
+
+public class FooClass {
+  // nothing here
+}
+```
+
+```
+public class BarClass {
+  Map<String, Object> map;
+}
+```
+````
+
+#### Different Replacement Pattern                            
+
+With different replacement pattern as in:                                          
+
+```java
+public class HowToDifferentReplacementPatternTest {
+
+  @RegisterExtension
+  public static Recording recording=Recorder.with("howtoDoubleCurly.md", ReplacementPattern.DOUBLE_CURLY, TabSize.spaces(2))
+    .sourceCodeOf("fooClass", FooClass.class);
+
+  @Test
+  public void theMethodNameIsTheKey() {
+    // everything after this marker ...
+    recording.include(BarClass.class, Includes.WithoutPackage, Includes.Trim, Includes.WithoutImports);
+    recording.begin();
+    
+    boolean sampleVar = true;
+    assertTrue(sampleVar);
+    
+    recording.end();
+    // nothing after this marker
+  }
+  
+  @Test
+  public void multipleCodeBlocks() {
+    recording.begin();
+    // first block
+    recording.end();
+    recording.begin("named");
+    // second block - named
+    recording.end();
+  }
+}
+```
+
+.. and a differnt template as TestClass-Resource (same package):
+
+````markdown
+# How To
+
+some text
+
+## Simple Sample 
+
+```
+{{theMethodNameIsTheKey}}
+```
+
+### .. with class include
+
+```
+{{theMethodNameIsTheKey.BarClass}}
+```
+
+
+## Sample with more than one block
+
+```
+{{multipleCodeBlocks}}
+```
+
+## Sample with more than one block - alt version
+
+```
+{{multipleCodeBlocks.1}}
+```
+
+```
+{{multipleCodeBlocks.2}}
+```
+
+```
+{{multipleCodeBlocks.named}}
+```
+
+# Includes
+
+```
+{{fooClass}}
+```
+
+```
+{{theMethodNameIsTheKey.BarClass}}
+```
+````
 
 ... and you will get this:
 
