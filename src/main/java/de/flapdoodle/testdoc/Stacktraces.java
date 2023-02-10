@@ -18,8 +18,6 @@ package de.flapdoodle.testdoc;
 
 import java.util.Arrays;
 
-import de.flapdoodle.checks.Preconditions;
-
 public abstract class Stacktraces {
 
 	private Stacktraces() {

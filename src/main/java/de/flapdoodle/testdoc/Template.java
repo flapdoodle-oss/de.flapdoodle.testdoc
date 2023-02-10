@@ -16,7 +16,6 @@
  */
 package de.flapdoodle.testdoc;
 
-import de.flapdoodle.checks.Preconditions;
 import org.immutables.value.Value;
 
 import java.util.Map;

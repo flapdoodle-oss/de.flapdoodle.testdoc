@@ -16,13 +16,11 @@
  */
 package de.flapdoodle.testdoc;
 
-import de.flapdoodle.checks.Preconditions;
 import de.flapdoodle.testdoc.Stacktraces.Scope;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;

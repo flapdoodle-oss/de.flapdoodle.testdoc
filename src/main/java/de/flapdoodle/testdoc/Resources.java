@@ -16,24 +16,12 @@
  */
 package de.flapdoodle.testdoc;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import de.flapdoodle.checks.Preconditions;
-import de.flapdoodle.types.ThrowingSupplier;
 
 abstract class Resources {
 
