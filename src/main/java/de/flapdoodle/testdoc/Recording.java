@@ -21,20 +21,19 @@ import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
 import java.io.IOException;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.*;
-import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
 public class Recording implements AfterAllCallback {
 
 	private static final String DEST_DIR_PROPERTY = "de.flapdoodle.testdoc.destination";
-	private static final ThreadLocal<BiConsumer<String, String>> templateConsumer = new ThreadLocal<>();
+	private static final ThreadLocal<RenderOutputDelegate> templateConsumer = new ThreadLocal<>();
 
 	private final TemplateReference templateReference;
 	private final List<String> testSourceCode;
@@ -43,8 +42,11 @@ public class Recording implements AfterAllCallback {
 	private final Map<String, String> classes = new LinkedHashMap<>();
 	private final Map<String, String> resources = new LinkedHashMap<>();
 	private final Map<String, String> output = new LinkedHashMap<>();
+	private final Map<String, byte[]> files = new LinkedHashMap<>();
+
 	private final TabSize tabSize;
 	private Optional<BiFunction<String, Set<String>, String>> replacementNotFoundFallback = Optional.empty();
+	private Optional<String> renderTo = Optional.empty();
 
 	protected Recording(TemplateReference templateReference, List<String> testSourceCode, TabSize tabSize) {
 		this.tabSize = tabSize;
@@ -87,8 +89,15 @@ public class Recording implements AfterAllCallback {
 		return this;
 	}
 
+	public Recording renderTo(String destination) {
+		Preconditions.checkNotNull(destination,"destination is null");
+		Preconditions.checkArgument(!this.renderTo.isPresent(),"destination already set to: %s", this.renderTo);
+		this.renderTo = Optional.of(destination);
+		return this;
+	}
+
 	@Override
-	public void afterAll(ExtensionContext extensionContext) throws Exception {
+	public void afterAll(ExtensionContext extensionContext) {
 		String renderedTemplate = Renderer.renderTemplate(Recordings.builder()
 			.templateReference(templateReference)
 			.linesOfCode(testSourceCode)
@@ -100,19 +109,29 @@ public class Recording implements AfterAllCallback {
 			.replacementNotFoundFallback(replacementNotFoundFallback)
 			.build());
 
-		writeResult(templateReference.templateName(), renderedTemplate);
+		writeResult(renderTo.orElse(templateReference.templateName()), renderedTemplate, files);
 	}
 
-	protected static void writeResult(String templateName, String renderedTemplate) {
+	protected static void writeResult(String templateName, String renderedTemplate, Map<String, byte[]> files) {
 		if (templateConsumer.get() != null) {
-			templateConsumer.get().accept(templateName, renderedTemplate);
+			templateConsumer.get().writeResult(templateName, renderedTemplate, files);
 		} else {
 			String destination = System.getProperty(DEST_DIR_PROPERTY);
 			if (destination != null) {
-				Path output = Paths.get(destination).resolve(templateName);
+				Path destinationPath = Paths.get(destination);
+				Preconditions.checkArgument(Files.exists(destinationPath),"%s does not exist", destinationPath);
+				Preconditions.checkArgument(Files.isDirectory(destinationPath),"%s is not a directory", destinationPath);
+				Path output = destinationPath.resolve(templateName);
 				try {
-					Files.write(output, renderedTemplate.getBytes(Charset.forName("UTF-8")), StandardOpenOption.WRITE, StandardOpenOption.CREATE,
+					createParentDirectoryIfNeeded(output);
+					Files.write(output, renderedTemplate.getBytes(StandardCharsets.UTF_8), StandardOpenOption.WRITE, StandardOpenOption.CREATE,
 						StandardOpenOption.TRUNCATE_EXISTING);
+
+					for (Map.Entry<String, byte[]> entry : files.entrySet()) {
+						Path filePath = createParentDirectoryIfNeeded(destinationPath.resolve(entry.getKey()));
+						Files.write(filePath, entry.getValue(), StandardOpenOption.WRITE, StandardOpenOption.CREATE,
+							StandardOpenOption.TRUNCATE_EXISTING);
+					}
 				}
 				catch (IOException iox) {
 					throw new RuntimeException("could not write " + output, iox);
@@ -124,8 +143,20 @@ public class Recording implements AfterAllCallback {
 				System.out.println("---------------------------");
 				System.out.println(renderedTemplate);
 				System.out.println("---------------------------");
+				files.forEach((file, content) -> {
+					System.out.println("- "+file+" -> "+content.length+" bytes");
+				});
+				if (!files.isEmpty()) System.out.println("---------------------------");
 			}
 		}
+	}
+
+	private static Path createParentDirectoryIfNeeded(Path filePath) throws IOException {
+		Path parent = filePath.getParent();
+		if (!Files.exists(parent)) {
+			Files.createDirectories(parent);
+		}
+		return filePath;
 	}
 
 	public void include(Class<?> clazz, Includes... includeOptions) {
@@ -147,6 +178,15 @@ public class Recording implements AfterAllCallback {
 		Preconditions.checkArgument(old == null, "%s already set to %s", label, old);
 	}
 
+	public void file(String label, String fileName, byte[] content) {
+		Line currentLine = Stacktraces.currentLine(Scope.CallerOfCaller);
+		String scopedLabel = currentLine.methodName() + "." + label;
+		String old = output.put(scopedLabel, fileName);
+		Preconditions.checkArgument(old == null, "%s already set to %s", label, old);
+		byte[] oldContent = files.put(fileName, Arrays.copyOf(content, content.length));
+		Preconditions.checkArgument(oldContent == null, "%s/%s already set", label, fileName);
+	}
+
 
 	public void begin() {
 		Line currentLine = Stacktraces.currentLine(Scope.CallerOfCaller);
@@ -163,15 +203,15 @@ public class Recording implements AfterAllCallback {
 		lines.add(End.of(currentLine));
 	}
 
-	private static BiConsumer<String, String> setTemplateConsumerForInternalUse(BiConsumer<String, String> consumer) {
-		BiConsumer<String, String> old = templateConsumer.get();
+	private static RenderOutputDelegate setTemplateConsumerForInternalUse(RenderOutputDelegate consumer) {
+		RenderOutputDelegate old = templateConsumer.get();
 		templateConsumer.set(consumer);
 		return old;
 	}
 
-	protected static Consumer<Runnable> runWithTemplateConsumer(BiConsumer<String, String> consumer) {
+	protected static Consumer<Runnable> runWithTemplateConsumer(RenderOutputDelegate consumer) {
 		return runnable -> {
-			BiConsumer<String, String> old = setTemplateConsumerForInternalUse(consumer);
+			RenderOutputDelegate old = setTemplateConsumerForInternalUse(consumer);
 			try {
 				runnable.run();
 			}
@@ -179,5 +219,9 @@ public class Recording implements AfterAllCallback {
 				setTemplateConsumerForInternalUse(old);
 			}
 		};
+	}
+
+	public interface RenderOutputDelegate {
+		void writeResult(String templateName, String renderedTemplate, Map<String, byte[]> files);
 	}
 }

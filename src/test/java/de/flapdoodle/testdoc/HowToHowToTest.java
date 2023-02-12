@@ -27,11 +27,11 @@ import org.junit.platform.launcher.core.LauncherFactory;
 import org.junit.platform.launcher.listeners.SummaryGeneratingListener;
 import org.junit.platform.launcher.listeners.TestExecutionSummary;
 
-import java.io.PrintWriter;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -47,6 +47,8 @@ public class HowToHowToTest {
 		.resource("howToDoubleCurlyTest.md", HowToDifferentReplacementPatternTest.class, "howtoDoubleCurly.md"/*, ResourceFilter.indent("\t")*/)
 		.sourceCodeOf("methodSourceTest", MethodSourceTest.class, Includes.WithoutPackage, Includes.WithoutImports, Includes.Trim)
 		.resource("methodSourceTest.md", MethodSourceTest.class, "method-source.md"/*, ResourceFilter.indent("\t")*/)
+		.sourceCodeOf("howToAddFilesTest", HowToAddFilesTest.class, Includes.WithoutPackage, Includes.WithoutImports, Includes.Trim)
+		.resource("howToAddFilesTest.md", HowToAddFilesTest.class, "HowToAddFiles.md")
 //		.replacementNotFoundFallback((key, keys) -> "${"+key+"->not found in "+keys+"}")
 		;
 
@@ -101,6 +103,17 @@ public class HowToHowToTest {
 		);
 	}
 
+	@Test
+	public void howToAddFiles() {
+		recordTestRun(
+			"howToAddFilesOutput",
+			HowToAddFilesTest.class,
+			() -> HowToAddFilesTest.recording,
+			() -> Recorder.with(HowToAddFilesTest.class,"HowToAddFiles.md", TabSize.spaces(2)),
+			r -> HowToAddFilesTest.recording=r
+		);
+	}
+
 	static void recordTestRun(
 		String label,
 		Class<?> testClass,
@@ -109,10 +122,12 @@ public class HowToHowToTest {
 		Consumer<Recording> setRecording
 	) {
 		AtomicReference<String> renderedOutput=new AtomicReference<String>();
+		AtomicReference<Map<String, byte[]>> renderedFiles = new AtomicReference<>();
 
 		// redirect output for the following recording
-		Recording.runWithTemplateConsumer((name, content) -> {
+		Recording.runWithTemplateConsumer((name, content, files) -> {
 			renderedOutput.set(content);
+			renderedFiles.set(files);
 		}).accept(() -> {
 
 			// run junit
@@ -156,7 +171,9 @@ public class HowToHowToTest {
 
 		// extract recorded content
 		String content = renderedOutput.get();
+		Map<String, byte[]> filesMap = renderedFiles.get();
 		assertNotNull(content, "renderedTemplate");
 		recording.output(label, content /*ResourceFilter.indent("\t").apply(content)*/);
+		recording.output(label+".files", String.join(", ", filesMap.keySet()));
 	}
 }

@@ -429,6 +429,46 @@ public void otherMethod() {
 ```
 ````
 
+#### Add Files
+
+... to write some files as part of the test
+
+```java
+public class HowToAddFilesTest {
+
+  @RegisterExtension
+  public static Recording recording=Recorder.with("HowToAddFiles.md", TabSize.spaces(2))
+    .renderTo("howto-add-files.md");
+
+  @Test
+  public void inAndMethod() {
+    recording.file("file", "test.txt", "could be any content".getBytes(StandardCharsets.UTF_8));
+    recording.begin();
+    // ..
+    recording.end();
+  }
+}
+```
+
+.. and create MarkDown template as TestClass-Resource (same package):
+
+````markdown
+# An other HowTo
+
+this documentation references this [file](${inAndMethod.file})
+
+````
+... and you will get this:
+
+````markdown
+# An other HowTo
+
+this documentation references this [file](test.txt)
+
+````
+
+with these files generated: test.txt
+
 
 #### Without Template
 

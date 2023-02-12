@@ -63,6 +63,27 @@ ${methodSourceTest.md}
 ${recordTestRun.methodSourceOutput}
 ````
 
+#### Add Files
+
+... to write some files as part of the test
+
+```java
+${howToAddFilesTest}
+```
+
+.. and create MarkDown template as TestClass-Resource (same package):
+
+````markdown
+${howToAddFilesTest.md}
+````
+... and you will get this:
+
+````markdown
+${recordTestRun.howToAddFilesOutput}
+````
+
+with these files generated: ${recordTestRun.howToAddFilesOutput.files}
+
 
 #### Without Template
 
