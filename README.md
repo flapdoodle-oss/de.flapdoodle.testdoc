@@ -9,12 +9,12 @@ simple doc generator based on unit tests
 
 ### Maven
 
-Stable (Maven Central Repository, Released: 10.02.2023 - wait 24hrs for [maven central](http://repo1.maven.org/maven2/de/flapdoodle/guava/de.flapdoodle.testdoc/maven-metadata.xml))
+Stable (Maven Central Repository, Released: 12.02.2023 - wait 24hrs for [maven central](http://repo1.maven.org/maven2/de/flapdoodle/guava/de.flapdoodle.testdoc/maven-metadata.xml))
 
 	<dependency>
 		<groupId>de.flapdoodle.testdoc</groupId>
 		<artifactId>de.flapdoodle.testdoc</artifactId>
-		<version>1.6.0</version>
+		<version>1.6.1</version>
 	</dependency>
 
 ### Usage
