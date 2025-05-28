@@ -13,7 +13,7 @@
     <groupId>de.flapdoodle.testdoc</groupId>
     <artifactId>de.flapdoodle.testdoc</artifactId>
     <name>Flapdoodle Testdoc</name>
-    <version>1.6.2</version>
+    <version>1.6.3-SNAPSHOT</version>
 
     <description>testdocs</description>
     <url>http://github.com/flapdoodle-oss/de.flapdoodle.testdoc</url>
@@ -39,7 +39,7 @@
         <connection>scm:git:git@github.com:flapdoodle-oss/de.flapdoodle.testdoc.git</connection>
         <developerConnection>scm:git:git@github.com:flapdoodle-oss/de.flapdoodle.testdoc.git</developerConnection>
         <url>git@github.com:flapdoodle-oss/de.flapdoodle.testdoc.git</url>
-        <tag>de.flapdoodle.testdoc-1.6.2</tag>
+        <tag>HEAD</tag>
     </scm>
 
 <!--    <distributionManagement>-->
