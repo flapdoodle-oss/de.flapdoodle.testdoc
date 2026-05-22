@@ -25,11 +25,15 @@ public abstract class Stacktraces {
 	}
 	
 	public static enum Scope {
-		Caller, CallerOfCaller, CallerOfCallerWithDelegate, 
+		Caller, CallerOfCaller, CallerOfCallerWithDelegate, CallerInLambda,
 	}
-	
+
 	static Line currentLine(Scope scope) {
 		return lineOf(new RuntimeException().getStackTrace(), offset(scope));
+	}
+
+	static Line currentLine(Scope scope, Scope parentScope) {
+		return lineOf(new RuntimeException().getStackTrace(), offset(scope), offset(parentScope));
 	}
 
 	private static int offset(Scope scope) {
@@ -40,6 +44,8 @@ public abstract class Stacktraces {
 				return 2;
 			case CallerOfCallerWithDelegate:
 				return 3;
+			case CallerInLambda:
+				return 4;
 		};
 		throw new IllegalArgumentException("scope not supported: "+scope);
 	}
@@ -55,9 +61,31 @@ public abstract class Stacktraces {
 		return Line.builder()
 				.className(stack.getClassName())
 				.fileName(stack.getFileName())
-				.methodName(stack.getMethodName())
+				.methodName(normalizeMethodName(stack.getMethodName()))
 				.lineNumber(stack.getLineNumber())
 				.build();
 	}
 
+	private static Line lineOf(StackTraceElement[] stackTrace, int skipLines, int parentSkipLines) {
+		int stackAfterRecorderCall=skipLines;
+		int parentStackAfterRecorderCall=parentSkipLines;
+		Preconditions.checkArgument(stackAfterRecorderCall>0, "could not find recorder in stackTrace: %s",Arrays.asList(stackTrace));
+		Preconditions.checkArgument(stackAfterRecorderCall<stackTrace.length, "found recorder in stackTrace at %s, but nothing left: %s",stackAfterRecorderCall, Arrays.asList(stackTrace));
+		Preconditions.checkArgument(parentStackAfterRecorderCall>0, "(nested) could not find recorder in stackTrace: %s",Arrays.asList(stackTrace));
+		Preconditions.checkArgument(parentStackAfterRecorderCall<stackTrace.length, "(nested) found recorder in stackTrace at %s, but nothing left: %s",stackAfterRecorderCall, Arrays.asList(stackTrace));
+		return lineOf(stackTrace[parentStackAfterRecorderCall], stackTrace[stackAfterRecorderCall]);
+	}
+
+	private static Line lineOf(StackTraceElement stack, StackTraceElement nested) {
+		return Line.builder()
+			.className(stack.getClassName())
+			.fileName(stack.getFileName())
+			.methodName(normalizeMethodName(stack.getMethodName()))
+			.lineNumber(nested.getLineNumber())
+			.build();
+	}
+
+	private static String normalizeMethodName(String methodName) {
+		return methodName.replace("$", "_dollar_");
+	}
 }

@@ -50,6 +50,21 @@ public class HowToTest {
     // second block - named
     recording.end();
   }
+
+  @Test
+  public void lambdas() {
+    // before
+    call(() -> {
+      recording.beginInLambda("lambda");
+      // lambda code
+      recording.endInLambda();
+    });
+    // aftter
+  }
+
+  void call(Runnable r) {
+    r.run();
+  }
 }
 ```
 
@@ -64,6 +79,13 @@ some text
 
 ```
 ${theMethodNameIsTheKey}
+```
+
+## Lambdas
+ 
+lambda code
+```
+${lambdas.lambda}
 ```
 
 ### .. with class include
@@ -133,6 +155,13 @@ some text
 boolean sampleVar = true;
 assertTrue(sampleVar);
 
+```
+
+## Lambdas
+ 
+lambda code
+```
+// lambda code
 ```
 
 ### .. with class include

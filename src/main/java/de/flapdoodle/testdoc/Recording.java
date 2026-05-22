@@ -203,6 +203,16 @@ public class Recording implements AfterAllCallback {
 		lines.add(End.of(currentLine));
 	}
 
+	public void beginInLambda(String label) {
+		Line currentLine = Stacktraces.currentLine(Scope.CallerOfCaller, Scope.CallerInLambda);
+		lines.add(Start.of(label, currentLine));
+	}
+
+	public void endInLambda() {
+		Line currentLine = Stacktraces.currentLine(Scope.CallerOfCaller, Scope.CallerInLambda);
+		lines.add(End.of(currentLine));
+	}
+
 	private static RenderOutputDelegate setTemplateConsumerForInternalUse(RenderOutputDelegate consumer) {
 		RenderOutputDelegate old = templateConsumer.get();
 		templateConsumer.set(consumer);

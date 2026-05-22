@@ -2,10 +2,17 @@
 
 some text
 
-## Simple Sample 
+## Simple Sample
 
 ```
 ${theMethodNameIsTheKey}
+```
+
+## Lambdas
+ 
+lambda code
+```
+${lambdas.lambda}
 ```
 
 ### .. with class include

@@ -49,4 +49,19 @@ public class HowToTest {
 		// second block - named
 		recording.end();
 	}
+
+	@Test
+	public void lambdas() {
+		// before
+		call(() -> {
+			recording.beginInLambda("lambda");
+			// lambda code
+			recording.endInLambda();
+		});
+		// aftter
+	}
+
+	void call(Runnable r) {
+		r.run();
+	}
 }
