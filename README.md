@@ -14,7 +14,7 @@ Stable (Maven Central Repository, Released: 28.05.2025 - wait 24hrs for [maven c
 	<dependency>
 		<groupId>de.flapdoodle.testdoc</groupId>
 		<artifactId>de.flapdoodle.testdoc</artifactId>
-		<version>1.6.2</version>
+		<version>1.7.0</version>
 	</dependency>
 
 ### Usage
