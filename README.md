@@ -1,3 +1,5 @@
+.. moved to [de.flapdoodle.commons](https://github.com/flapdoodle-oss/de.flapdoodle.commons)
+
 # Organisation Flapdoodle OSS
 [![Maven Central](https://img.shields.io/maven-central/v/de.flapdoodle.testdoc/de.flapdoodle.testdoc.svg)](https://maven-badges.herokuapp.com/maven-central/de.flapdoodle.testdoc/de.flapdoodle.testdoc)
 
